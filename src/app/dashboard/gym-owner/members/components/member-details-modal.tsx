@@ -1,0 +1,115 @@
+"use client";
+
+import React from "react";
+import { X } from "lucide-react";
+
+// Helper function for consistent date formatting
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+};
+
+interface MemberDetailsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  member: Member | null;
+}
+
+interface Member {
+  id: string;
+  name: string;
+  email: string;
+  membershipType: "Basic" | "Premium" | "VIP";
+  status: "Active" | "Inactive" | "Pending";
+  joiningDate: string;
+  nextPayment: string;
+  trainer: string;
+  attendance: number;
+}
+
+export default function MemberDetailsModal({ isOpen, onClose, member }: MemberDetailsModalProps) {
+  if (!isOpen || !member) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+      <div className="bg-[#151C2C] rounded-xl w-full max-w-lg p-6 relative">
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 p-2 hover:bg-[#1A2234] rounded-lg transition-colors"
+        >
+          <X className="w-5 h-5 text-gray-400" />
+        </button>
+
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-medium">
+            {member.name.split(" ").map(n => n[0]).join("")}
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-white">{member.name}</h2>
+            <p className="text-gray-400">{member.email}</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-[#1A2234] p-4 rounded-lg">
+              <p className="text-sm text-gray-400 mb-1">Membership Type</p>
+              <p className="text-gray-200 font-medium">{member.membershipType}</p>
+            </div>
+            <div className="bg-[#1A2234] p-4 rounded-lg">
+              <p className="text-sm text-gray-400 mb-1">Status</p>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium
+                ${member.status === "Active" 
+                  ? "bg-green-500/10 text-green-500"
+                  : member.status === "Inactive"
+                  ? "bg-red-500/10 text-red-500"
+                  : "bg-yellow-500/10 text-yellow-500"
+                }`}>
+                {member.status}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-[#1A2234] p-4 rounded-lg">
+              <p className="text-sm text-gray-400 mb-1">Joining Date</p>
+              <p className="text-gray-200 font-medium">
+                {formatDate(member.joiningDate)}
+              </p>
+            </div>
+            <div className="bg-[#1A2234] p-4 rounded-lg">
+              <p className="text-sm text-gray-400 mb-1">Next Payment</p>
+              <p className="text-gray-200 font-medium">
+                {formatDate(member.nextPayment)}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-[#1A2234] p-4 rounded-lg">
+              <p className="text-sm text-gray-400 mb-1">Assigned Trainer</p>
+              <p className="text-gray-200 font-medium">{member.trainer}</p>
+            </div>
+            <div className="bg-[#1A2234] p-4 rounded-lg">
+              <p className="text-sm text-gray-400 mb-1">Attendance Rate</p>
+              <p className="text-gray-200 font-medium">{member.attendance}%</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 pt-6 border-t border-gray-800">
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 bg-[#1A2234] text-gray-200 rounded-lg hover:bg-[#212B42] transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

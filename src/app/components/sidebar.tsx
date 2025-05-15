@@ -21,7 +21,7 @@ export default function Sidebar() {
     { icon: Home, label: 'Home', href: '/' },
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard/gym-owner', isActive: true },
     { icon: Users, label: 'Trainers', href: '/dashboard/gym-owner/trainers' },
-    { icon: UserCircle, label: 'Members', href: '/dashboard/members' },
+    { icon: UserCircle, label: 'Members', href: '/dashboard/gym-owner/members' },
     { icon: BarChart2, label: 'Analytics', href: '/dashboard/analytics' },
     { icon: Building2, label: 'Facilities', href: '/dashboard/facilities' },
     { icon: UserCircle, label: 'Profile', href: '/dashboard/profile' },
