@@ -4,37 +4,51 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  Home,
   LayoutDashboard,
   Users,
   UserCircle,
   BarChart2,
-  Building2,
+  Calendar,
+  ClipboardList,
   Settings,
-  LogOut
+  LogOut,
+  MessageSquare
 } from 'lucide-react';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const isTrainerDashboard = pathname.includes('/dashboard/trainer');
 
-  const menuItems = [
-    { icon: Home, label: 'Home', href: '/' },
+  const gymOwnerMenu = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard/gym-owner', isActive: true },
     { icon: Users, label: 'Trainers', href: '/dashboard/gym-owner/trainers' },
     { icon: UserCircle, label: 'Members', href: '/dashboard/gym-owner/members' },
     { icon: BarChart2, label: 'Analytics', href: '/dashboard/analytics' },
-    { icon: Building2, label: 'Facilities', href: '/dashboard/facilities' },
     { icon: UserCircle, label: 'Profile', href: '/dashboard/profile' },
     { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
   ];
+
+  const trainerMenu = [
+    { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard/trainer' },
+    { icon: Users, label: 'My Clients', href: '/dashboard/trainer/clients' },
+    { icon: Calendar, label: 'Schedule', href: '/dashboard/trainer/schedule' },
+    { icon: ClipboardList, label: 'Workout Plans', href: '/dashboard/trainer/workouts' },
+    { icon: BarChart2, label: 'Performance', href: '/dashboard/trainer/performance' },
+    { icon: Calendar, label: 'Session History', href: '/dashboard/trainer/history' },
+    { icon: MessageSquare, label: 'Messages', href: '/dashboard/trainer/messages' },
+    { icon: UserCircle, label: 'Profile', href: '/dashboard/trainer/profile' },
+    { icon: Settings, label: 'Settings', href: '/dashboard/trainer/settings' },
+  ];
+
+  const menuItems = isTrainerDashboard ? trainerMenu : gymOwnerMenu;
 
   return (
     <div className="fixed top-0 left-0 h-screen w-64 bg-[#151C2C] border-r border-gray-800">
       {/* Logo */}
       <div className="p-6">
-        <Link href="/" className="flex flex-col">
+        <Link href={isTrainerDashboard ? "/dashboard/trainer" : "/dashboard/gym-owner"} className="flex flex-col">
           <h1 className="text-xl font-bold text-white">GymSync</h1>
-          <p className="text-xs text-gray-500">Fitness Management System</p>
+          <p className="text-xs text-gray-500">{isTrainerDashboard ? "Trainer Portal" : "Management System"}</p>
         </Link>
       </div>
 
