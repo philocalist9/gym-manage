@@ -19,15 +19,75 @@ import {
   CheckSquare,
   Apple,
   CreditCard,
-  Target
+  Target,
+  Building2,
+  DollarSign,
+  PieChart,
+  Search,
+  ShieldAlert
 } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
+
+interface MenuItem {
+  icon: LucideIcon;
+  label: string;
+  href: string;
+  description?: string;
+  isActive?: boolean;
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
   const isTrainerDashboard = pathname.includes('/dashboard/trainer');
   const isMemberDashboard = pathname.includes('/dashboard/member');
+  const isSuperAdminDashboard = pathname.includes('/dashboard/super-admin');
 
-  const gymOwnerMenu = [
+  const superAdminMenu: MenuItem[] = [
+    { 
+      icon: LayoutDashboard, 
+      label: 'Overview', 
+      href: '/dashboard/super-admin',
+      description: 'System-wide statistics and metrics'
+    },
+    { 
+      icon: Building2, 
+      label: 'Gym Management', 
+      href: '/dashboard/super-admin/gyms',
+      description: 'Manage all registered gyms'
+    },
+    { 
+      icon: Users, 
+      label: 'User Management', 
+      href: '/dashboard/super-admin/users',
+      description: 'Manage all system users'
+    },
+    { 
+      icon: DollarSign, 
+      label: 'Revenue Analytics', 
+      href: '/dashboard/super-admin/revenue',
+      description: 'Financial reports and analytics'
+    },
+    { 
+      icon: PieChart, 
+      label: 'System Analytics', 
+      href: '/dashboard/super-admin/analytics',
+      description: 'System performance metrics'
+    },
+    { 
+      icon: ShieldAlert, 
+      label: 'Security & Access', 
+      href: '/dashboard/super-admin/security',
+      description: 'Security settings and access control'
+    },
+    { 
+      icon: Settings, 
+      label: 'System Settings', 
+      href: '/dashboard/super-admin/settings',
+      description: 'Global system configuration'
+    },
+  ];
+
+  const gymOwnerMenu: MenuItem[] = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard/gym-owner', isActive: true },
     { icon: Users, label: 'Trainers', href: '/dashboard/gym-owner/trainers' },
     { icon: UserCircle, label: 'Members', href: '/dashboard/gym-owner/members' },
@@ -36,7 +96,7 @@ export default function Sidebar() {
     { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
   ];
 
-  const trainerMenu = [
+  const trainerMenu: MenuItem[] = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard/trainer' },
     { icon: Users, label: 'My Clients', href: '/dashboard/trainer/clients' },
     { icon: Calendar, label: 'Schedule', href: '/dashboard/trainer/schedule' },
@@ -48,7 +108,7 @@ export default function Sidebar() {
     { icon: Settings, label: 'Settings', href: '/dashboard/trainer/settings' },
   ];
 
-  const memberMenu = [
+  const memberMenu: MenuItem[] = [
     { icon: LayoutDashboard, label: 'Dashboard Home', href: '/dashboard/member' },
     { icon: Calendar, label: 'Workout Schedule', href: '/dashboard/member/schedule' },
     { icon: Activity, label: 'Progress Tracker', href: '/dashboard/member/progress' },
@@ -60,19 +120,44 @@ export default function Sidebar() {
     { icon: Target, label: 'Goal Tracker', href: '/dashboard/member/goals' },
   ];
 
-  const memberBottomMenu = [
+  const memberBottomMenu: MenuItem[] = [
     { icon: UserCircle, label: 'Profile Page', href: '/dashboard/member/profile' },
   ];
 
-  const menuItems = isMemberDashboard ? memberMenu : isTrainerDashboard ? trainerMenu : gymOwnerMenu;
+  const menuItems = isSuperAdminDashboard 
+    ? superAdminMenu 
+    : isMemberDashboard 
+    ? memberMenu 
+    : isTrainerDashboard 
+    ? trainerMenu 
+    : gymOwnerMenu;
 
   return (
     <div className="fixed top-0 left-0 h-screen w-64 bg-[#151C2C] border-r border-gray-800">
       {/* Logo */}
       <div className="p-6">
-        <Link href={isTrainerDashboard ? "/dashboard/trainer" : isMemberDashboard ? "/dashboard/member" : "/dashboard/gym-owner"} className="flex flex-col">
+        <Link 
+          href={
+            isSuperAdminDashboard 
+              ? "/dashboard/super-admin" 
+              : isTrainerDashboard 
+              ? "/dashboard/trainer" 
+              : isMemberDashboard 
+              ? "/dashboard/member" 
+              : "/dashboard/gym-owner"
+          } 
+          className="flex flex-col"
+        >
           <h1 className="text-xl font-bold text-white">GymSync</h1>
-          <p className="text-xs text-gray-500">{isTrainerDashboard ? "Trainer Portal" : isMemberDashboard ? "Member Portal" : "Management System"}</p>
+          <p className="text-xs text-gray-500">
+            {isSuperAdminDashboard 
+              ? "Super Admin Portal" 
+              : isTrainerDashboard 
+              ? "Trainer Portal" 
+              : isMemberDashboard 
+              ? "Member Portal" 
+              : "Management System"}
+          </p>
         </Link>
       </div>
 
@@ -82,7 +167,7 @@ export default function Sidebar() {
           <Link
             key={item.href}
             href={item.href}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors group relative
               ${pathname === item.href 
                 ? 'bg-blue-600 text-white font-medium' 
                 : 'text-gray-400 hover:text-white hover:bg-[#1A2234]'
@@ -90,6 +175,12 @@ export default function Sidebar() {
           >
             <item.icon className="w-5 h-5" strokeWidth={1.5} />
             <span className="text-sm">{item.label}</span>
+            {/* Tooltip for super admin items */}
+            {isSuperAdminDashboard && item.description && (
+              <div className="absolute left-full ml-2 hidden group-hover:block bg-gray-900 text-white text-xs py-1 px-2 rounded w-48 z-50">
+                {item.description}
+              </div>
+            )}
           </Link>
         ))}
       </nav>
@@ -102,7 +193,7 @@ export default function Sidebar() {
             href={item.href}
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
               ${pathname === item.href 
-                ? 'bg-blue-600 text-white font-medium' 
+                ? 'bg-blue-600 text-white' 
                 : 'text-gray-400 hover:text-white hover:bg-[#1A2234]'
               }`}
           >
@@ -110,15 +201,14 @@ export default function Sidebar() {
             <span className="text-sm">{item.label}</span>
           </Link>
         ))}
-
-        {/* Logout Button */}
-        <button 
-          className="flex items-center gap-3 text-gray-400 hover:text-white px-4 py-3 w-full rounded-lg hover:bg-[#1A2234] transition-colors"
-          onClick={() => {/* TODO: Implement logout */}}
+        
+        <Link
+          href="/login"
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:text-red-300 hover:bg-[#1A2234] mt-4"
         >
           <LogOut className="w-5 h-5" strokeWidth={1.5} />
           <span className="text-sm">Logout</span>
-        </button>
+        </Link>
       </div>
     </div>
   );
