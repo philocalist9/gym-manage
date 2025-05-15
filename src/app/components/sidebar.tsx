@@ -36,64 +36,64 @@ interface MenuItem {
   isActive?: boolean;
 }
 
+const superAdminMenuItems: MenuItem[] = [
+  { 
+    icon: LayoutDashboard, 
+    label: 'Overview', 
+    href: '/dashboard/super-admin',
+    description: 'System overview and metrics'
+  },
+  { 
+    icon: Users, 
+    label: 'Users', 
+    href: '/dashboard/super-admin/users',
+    description: 'Manage system users and permissions'
+  },
+  { 
+    icon: Building2, 
+    label: 'Gyms', 
+    href: '/dashboard/super-admin/gyms',
+    description: 'Manage registered gyms'
+  },
+  { 
+    icon: DollarSign, 
+    label: 'Revenue', 
+    href: '/dashboard/super-admin/revenue',
+    description: 'Financial analytics and reports'
+  },
+  { 
+    icon: PieChart, 
+    label: 'Analytics', 
+    href: '/dashboard/super-admin/analytics',
+    description: 'System performance metrics'
+  },
+  { 
+    icon: ShieldAlert, 
+    label: 'Security', 
+    href: '/dashboard/super-admin/security',
+    description: 'Security settings and logs'
+  },
+  { 
+    icon: Settings, 
+    label: 'Settings', 
+    href: '/dashboard/super-admin/settings',
+    description: 'Global system configuration'
+  }
+];
+
 export default function Sidebar() {
   const pathname = usePathname();
   const isTrainerDashboard = pathname.includes('/dashboard/trainer');
   const isMemberDashboard = pathname.includes('/dashboard/member');
   const isSuperAdminDashboard = pathname.includes('/dashboard/super-admin');
 
-  const superAdminMenu: MenuItem[] = [
-    { 
-      icon: LayoutDashboard, 
-      label: 'Overview', 
-      href: '/dashboard/super-admin',
-      description: 'System-wide statistics and metrics'
-    },
-    { 
-      icon: Building2, 
-      label: 'Gym Management', 
-      href: '/dashboard/super-admin/gyms',
-      description: 'Manage all registered gyms'
-    },
-    { 
-      icon: Users, 
-      label: 'User Management', 
-      href: '/dashboard/super-admin/users',
-      description: 'Manage all system users'
-    },
-    { 
-      icon: DollarSign, 
-      label: 'Revenue Analytics', 
-      href: '/dashboard/super-admin/revenue',
-      description: 'Financial reports and analytics'
-    },
-    { 
-      icon: PieChart, 
-      label: 'System Analytics', 
-      href: '/dashboard/super-admin/analytics',
-      description: 'System performance metrics'
-    },
-    { 
-      icon: ShieldAlert, 
-      label: 'Security & Access', 
-      href: '/dashboard/super-admin/security',
-      description: 'Security settings and access control'
-    },
-    { 
-      icon: Settings, 
-      label: 'System Settings', 
-      href: '/dashboard/super-admin/settings',
-      description: 'Global system configuration'
-    },
-  ];
-
   const gymOwnerMenu: MenuItem[] = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard/gym-owner', isActive: true },
     { icon: Users, label: 'Trainers', href: '/dashboard/gym-owner/trainers' },
     { icon: UserCircle, label: 'Members', href: '/dashboard/gym-owner/members' },
-    { icon: BarChart2, label: 'Analytics', href: '/dashboard/analytics' },
-    { icon: UserCircle, label: 'Profile', href: '/dashboard/profile' },
-    { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
+    { icon: BarChart2, label: 'Analytics', href: '/dashboard/gym-owner/analytics' },
+    { icon: UserCircle, label: 'Profile', href: '/dashboard/gym-owner/profile' },
+    { icon: Settings, label: 'Settings', href: '/dashboard/gym-owner/settings' },
   ];
 
   const trainerMenu: MenuItem[] = [
@@ -125,7 +125,7 @@ export default function Sidebar() {
   ];
 
   const menuItems = isSuperAdminDashboard 
-    ? superAdminMenu 
+    ? superAdminMenuItems 
     : isMemberDashboard 
     ? memberMenu 
     : isTrainerDashboard 
@@ -134,7 +134,6 @@ export default function Sidebar() {
 
   return (
     <div className="fixed top-0 left-0 h-screen w-64 bg-[#151C2C] border-r border-gray-800">
-      {/* Logo */}
       <div className="p-6">
         <Link 
           href={
@@ -161,31 +160,32 @@ export default function Sidebar() {
         </Link>
       </div>
 
-      {/* Navigation */}
       <nav className="px-4 mt-2">
         {menuItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors group relative
-              ${pathname === item.href 
-                ? 'bg-blue-600 text-white font-medium' 
-                : 'text-gray-400 hover:text-white hover:bg-[#1A2234]'
-              }`}
-          >
-            <item.icon className="w-5 h-5" strokeWidth={1.5} />
-            <span className="text-sm">{item.label}</span>
-            {/* Tooltip for super admin items */}
+          <div key={item.href} className="relative group">
+            <Link
+              href={item.href}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors
+                ${pathname === item.href 
+                  ? 'bg-blue-600 text-white font-medium' 
+                  : 'text-gray-400 hover:text-white hover:bg-[#1A2234]'
+                }`}
+            >
+              <item.icon className="w-5 h-5" strokeWidth={1.5} />
+              <span className="text-sm">{item.label}</span>
+            </Link>
             {isSuperAdminDashboard && item.description && (
-              <div className="absolute left-full ml-2 hidden group-hover:block bg-gray-900 text-white text-xs py-1 px-2 rounded w-48 z-50">
+              <div
+                className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:block bg-gray-900 text-white text-xs py-1 px-2 rounded w-48 z-50"
+                aria-hidden="true"
+              >
                 {item.description}
               </div>
             )}
-          </Link>
+          </div>
         ))}
       </nav>
 
-      {/* Bottom Navigation */}
       <div className="absolute bottom-8 px-4 w-full space-y-1">
         {isMemberDashboard && memberBottomMenu.map((item) => (
           <Link

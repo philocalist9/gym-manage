@@ -1,0 +1,20 @@
+.toggle-checkbox:checked {
+  right: 0;
+  border-color: #2563eb; /* blue-600 */
+}
+.toggle-checkbox {
+  right: 0;
+  z-index: 0;
+  border-color: #d1d5db; /* gray-300 */
+  transition-duration: 0.3s;
+}
+.toggle-label {
+  display: block;
+  overflow: hidden;
+  cursor: pointer;
+  background-color: #d1d5db; /* gray-300 */
+  transition-duration: 0.3s;
+}
+.toggle-checkbox:checked + .toggle-label {
+  background-color: #2563eb; /* blue-600 */
+}
