@@ -12,12 +12,20 @@ import {
   ClipboardList,
   Settings,
   LogOut,
-  MessageSquare
+  MessageSquare,
+  Activity,
+  Weight,
+  CalendarClock,
+  CheckSquare,
+  Apple,
+  CreditCard,
+  Target
 } from 'lucide-react';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const isTrainerDashboard = pathname.includes('/dashboard/trainer');
+  const isMemberDashboard = pathname.includes('/dashboard/member');
 
   const gymOwnerMenu = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard/gym-owner', isActive: true },
@@ -40,15 +48,31 @@ export default function Sidebar() {
     { icon: Settings, label: 'Settings', href: '/dashboard/trainer/settings' },
   ];
 
-  const menuItems = isTrainerDashboard ? trainerMenu : gymOwnerMenu;
+  const memberMenu = [
+    { icon: LayoutDashboard, label: 'Dashboard Home', href: '/dashboard/member' },
+    { icon: Calendar, label: 'Workout Schedule', href: '/dashboard/member/schedule' },
+    { icon: Activity, label: 'Progress Tracker', href: '/dashboard/member/progress' },
+    { icon: CalendarClock, label: 'Appointments', href: '/dashboard/member/appointments' },
+    { icon: CheckSquare, label: 'Daily Health Check-In', href: '/dashboard/member/health' },
+    { icon: Apple, label: 'Diet / Nutrition Log', href: '/dashboard/member/diet' },
+    { icon: CreditCard, label: 'Payment History', href: '/dashboard/member/payments' },
+    { icon: MessageSquare, label: 'Chat with Trainer', href: '/dashboard/member/chat' },
+    { icon: Target, label: 'Goal Tracker', href: '/dashboard/member/goals' },
+  ];
+
+  const memberBottomMenu = [
+    { icon: UserCircle, label: 'Profile Page', href: '/dashboard/member/profile' },
+  ];
+
+  const menuItems = isMemberDashboard ? memberMenu : isTrainerDashboard ? trainerMenu : gymOwnerMenu;
 
   return (
     <div className="fixed top-0 left-0 h-screen w-64 bg-[#151C2C] border-r border-gray-800">
       {/* Logo */}
       <div className="p-6">
-        <Link href={isTrainerDashboard ? "/dashboard/trainer" : "/dashboard/gym-owner"} className="flex flex-col">
+        <Link href={isTrainerDashboard ? "/dashboard/trainer" : isMemberDashboard ? "/dashboard/member" : "/dashboard/gym-owner"} className="flex flex-col">
           <h1 className="text-xl font-bold text-white">GymSync</h1>
-          <p className="text-xs text-gray-500">{isTrainerDashboard ? "Trainer Portal" : "Management System"}</p>
+          <p className="text-xs text-gray-500">{isTrainerDashboard ? "Trainer Portal" : isMemberDashboard ? "Member Portal" : "Management System"}</p>
         </Link>
       </div>
 
@@ -70,8 +94,24 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Logout Button */}
-      <div className="absolute bottom-8 px-4 w-full">
+      {/* Bottom Navigation */}
+      <div className="absolute bottom-8 px-4 w-full space-y-1">
+        {isMemberDashboard && memberBottomMenu.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
+              ${pathname === item.href 
+                ? 'bg-blue-600 text-white font-medium' 
+                : 'text-gray-400 hover:text-white hover:bg-[#1A2234]'
+              }`}
+          >
+            <item.icon className="w-5 h-5" strokeWidth={1.5} />
+            <span className="text-sm">{item.label}</span>
+          </Link>
+        ))}
+
+        {/* Logout Button */}
         <button 
           className="flex items-center gap-3 text-gray-400 hover:text-white px-4 py-3 w-full rounded-lg hover:bg-[#1A2234] transition-colors"
           onClick={() => {/* TODO: Implement logout */}}
