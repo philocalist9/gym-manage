@@ -1,0 +1,134 @@
+"use client";
+
+import React, { useState } from "react";
+import { X } from "lucide-react";
+
+interface AddTrainerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAdd: (trainer: Omit<Trainer, "id">) => void;
+}
+
+interface Trainer {
+  id: string;
+  name: string;
+  email: string;
+  specialization: string;
+  status: "Available" | "In Session" | "Off Duty";
+  totalClients: number;
+  rating: number;
+  joinDate: string;
+}
+
+export default function AddTrainerModal({ isOpen, onClose, onAdd }: AddTrainerModalProps) {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    specialization: "",
+    status: "Available" as const,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onAdd({
+      ...formData,
+      totalClients: 0,
+      rating: 5.0,
+      joinDate: new Date().toISOString().split("T")[0],
+    });
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+      <div className="bg-[#151C2C] rounded-xl w-full max-w-md p-6 relative">
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 p-2 hover:bg-[#1A2234] rounded-lg transition-colors"
+        >
+          <X className="w-5 h-5 text-gray-400" />
+        </button>
+
+        <h2 className="text-xl font-semibold text-white mb-6">Add New Trainer</h2>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-400 mb-1">
+              Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-400 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="specialization" className="block text-sm font-medium text-gray-400 mb-1">
+              Specialization
+            </label>
+            <input
+              type="text"
+              id="specialization"
+              required
+              value={formData.specialization}
+              onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+              className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="status" className="block text-sm font-medium text-gray-400 mb-1">
+              Status
+            </label>
+            <select
+              id="status"
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+              className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 focus:outline-none focus:border-blue-500"
+            >
+              <option value="Available">Available</option>
+              <option value="In Session">In Session</option>
+              <option value="Off Duty">Off Duty</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-4 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-400 hover:text-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Add Trainer
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
