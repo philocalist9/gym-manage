@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import connectDB from '@/app/lib/mongodb';
 import Gym from '@/app/models/Gym';
+import { sendWelcomeEmail } from '@/app/utils/email';
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,6 +32,9 @@ export async function POST(req: NextRequest) {
       phone,
       password: hashedPassword,
     });
+
+    // Send welcome email
+    await sendWelcomeEmail(email, gymName, ownerName);
 
     // Remove password from response
     const gym = newGym.toObject();
