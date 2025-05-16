@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import Navbar from "../providers/navbar";
+import { useRouter } from 'next/navigation';
 
 interface FormData {
   gymName: string;
@@ -14,7 +15,7 @@ interface FormData {
   confirmPassword: string;
 }
 
-type FormErrors = Partial<Record<keyof FormData, string>>;
+type FormErrors = Partial<Record<keyof FormData | 'submit', string>>;
 
 const steps = [
   { id: 'gym-info', title: 'Gym Information' },
@@ -23,6 +24,7 @@ const steps = [
 ];
 
 export default function Register() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     gymName: "",
@@ -103,13 +105,41 @@ export default function Register() {
     }
 
     setIsLoading(true);
+    setErrors({});
     
-    // TODO: Implement actual registration logic
-    console.log("Registration attempt:", formData);
-    
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gymName: formData.gymName,
+          ownerName: formData.ownerName,
+          address: formData.address,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+
+      // Show success message and redirect
+      router.push('/login?registered=true');
+      
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      setErrors({
+        submit: error.message || 'Something went wrong during registration'
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const renderFormStep = () => {
@@ -285,6 +315,13 @@ export default function Register() {
       <Navbar />
       <div className="pt-16 flex items-center justify-center min-h-screen py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl w-full">
+          {/* Show submission error if any */}
+          {errors.submit && (
+            <div className="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800">
+              <p className="text-sm text-red-600 dark:text-red-400">{errors.submit}</p>
+            </div>
+          )}
+
           <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-2xl overflow-hidden">
             <div className="px-8 pt-8">
               {/* Header */}
