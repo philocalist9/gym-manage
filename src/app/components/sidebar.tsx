@@ -91,6 +91,8 @@ export default function Sidebar() {
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard/gym-owner', isActive: true },
     { icon: Users, label: 'Trainers', href: '/dashboard/gym-owner/trainers' },
     { icon: UserCircle, label: 'Members', href: '/dashboard/gym-owner/members' },
+    { icon: Weight, label: 'Equipment', href: '/dashboard/gym-owner/equipment' },
+    { icon: Activity, label: 'Machines', href: '/dashboard/gym-owner/machines' },
     { icon: BarChart2, label: 'Analytics', href: '/dashboard/gym-owner/analytics' },
     { icon: UserCircle, label: 'Profile', href: '/dashboard/gym-owner/profile' },
     { icon: Settings, label: 'Settings', href: '/dashboard/gym-owner/settings' },
