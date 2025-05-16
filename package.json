@@ -10,10 +10,12 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.76.1",
+    "@types/jsonwebtoken": "^9.0.9",
     "@types/nodemailer": "^6.4.17",
     "bcryptjs": "^3.0.2",
     "chart.js": "^4.4.9",
     "date-fns": "^4.1.0",
+    "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.510.0",
     "mongodb": "^6.16.0",
     "mongoose": "^8.14.3",

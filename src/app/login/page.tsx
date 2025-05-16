@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import Navbar from "../providers/navbar";
 import Image from "next/image";
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 export default function Login() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [showMessage, setShowMessage] = useState(searchParams.get('registered') === 'true');
+  const [errorMessage, setErrorMessage] = useState('');
   
   const [formData, setFormData] = useState({
     email: "",
@@ -30,13 +32,41 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage('');
     
-    // TODO: Implement actual login logic
-    console.log("Login attempt:", formData);
-    
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
+      
+      // Login successful - redirect to appropriate dashboard based on role
+      if (data.role === 'gym-owner') {
+        router.push('/dashboard/gym-owner');
+      } else if (data.role === 'trainer') {
+        router.push('/dashboard/trainer');
+      } else if (data.role === 'member') {
+        router.push('/dashboard/member');
+      } else if (data.role === 'super-admin') {
+        router.push('/dashboard/super-admin');
+      } else {
+        // Default dashboard
+        router.push('/dashboard/gym-owner');
+      }
+      
+    } catch (error: any) {
+      setErrorMessage(error.message || 'Login failed. Please check your credentials.');
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -50,6 +80,17 @@ export default function Login() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <p className="text-sm text-green-600 dark:text-green-400">Registration successful! Please log in to continue.</p>
+            </div>
+          </div>
+        )}
+        
+        {errorMessage && (
+          <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-full max-w-md">
+            <div className="m-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 flex items-center justify-center space-x-2">
+              <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <p className="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
             </div>
           </div>
         )}
