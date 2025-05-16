@@ -5,18 +5,30 @@ import { useState, useEffect } from "react";
 import Navbar from "../providers/navbar";
 import Image from "next/image";
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useAuth } from "../hooks/useAuth"; // Import the auth hook
 
 export default function Login() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showMessage, setShowMessage] = useState(searchParams.get('registered') === 'true');
   const [errorMessage, setErrorMessage] = useState('');
+  const { login, loading, error, isAuthenticated, user } = useAuth(); // Use the auth hook
   
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-  const [isLoading, setIsLoading] = useState(false);
+  
+  // Get the callback URL if one was provided
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const dashboardPath = getDashboardPathForRole(user.role);
+      router.push(dashboardPath);
+    }
+  }, [isAuthenticated, user, router]);
 
   useEffect(() => {
     if (showMessage) {
@@ -29,43 +41,42 @@ export default function Login() {
     }
   }, [showMessage]);
 
+  // Helper function to determine dashboard path based on role
+  const getDashboardPathForRole = (role: string): string => {
+    switch (role) {
+      case 'gym-owner':
+        return '/dashboard/gym-owner';
+      case 'trainer':
+        return '/dashboard/trainer';
+      case 'member':
+        return '/dashboard/member';
+      case 'super-admin':
+        return '/dashboard/super-admin';
+      default:
+        return '/dashboard';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setErrorMessage('');
     
     try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const result = await login(formData.email, formData.password);
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+      if (!result.success) {
+        throw new Error(result.error instanceof Error ? result.error.message : 'Login failed');
       }
       
-      // Login successful - redirect to appropriate dashboard based on role
-      if (data.role === 'gym-owner') {
-        router.push('/dashboard/gym-owner');
-      } else if (data.role === 'trainer') {
-        router.push('/dashboard/trainer');
-      } else if (data.role === 'member') {
-        router.push('/dashboard/member');
-      } else if (data.role === 'super-admin') {
-        router.push('/dashboard/super-admin');
-      } else {
-        // Default dashboard
-        router.push('/dashboard/gym-owner');
+      // If we have a callback URL, use it, otherwise use the role-specific dashboard
+      if (callbackUrl !== '/dashboard') {
+        router.push(callbackUrl);
+      } else if (user) {
+        router.push(getDashboardPathForRole(user.role));
       }
       
     } catch (error: any) {
       setErrorMessage(error.message || 'Login failed. Please check your credentials.');
-      setIsLoading(false);
     }
   };
 
@@ -236,17 +247,17 @@ export default function Login() {
               <button
                 type="submit"
                 className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${
-                  isLoading ? "opacity-75 cursor-not-allowed" : ""
+                  loading ? "opacity-75 cursor-not-allowed" : ""
                 }`}
-                disabled={isLoading}
+                disabled={loading}
               >
-                {isLoading && (
+                {loading && (
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 )}
-                {isLoading ? "Signing in..." : "Sign in"}
+                {loading ? "Signing in..." : "Sign in"}
               </button>
             </form>
           </div>

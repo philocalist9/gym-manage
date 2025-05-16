@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import connectDB from '@/app/lib/mongodb';
 import Gym from '@/app/models/Gym';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'gymsync-secure-jwt-token';
+import { createToken, setAuthCookie } from '@/app/utils/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,23 +37,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Create payload for token
+    const tokenPayload = { 
+      id: gym._id.toString(),
+      email: gym.email,
+      gymName: gym.gymName,
+      role: 'gym-owner'  // Set the role for authorization
+    };
+    
     // Create JWT token
-    const token = jwt.sign(
-      { 
-        id: gym._id,
-        email: gym.email,
-        gymName: gym.gymName,
-        role: 'gym-owner'  // Set the role for authorization
-      },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const token = createToken(tokenPayload);
 
     // Remove sensitive data from response
     const gymData = gym.toObject();
     delete gymData.password;
 
-    // Set cookie with JWT token
+    // Create response
     const response = NextResponse.json(
       { 
         message: 'Login successful', 
@@ -65,12 +62,8 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
 
-    response.cookies.set('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 // 7 days
-    });
+    // Set auth cookie
+    setAuthCookie(response, token);
 
     return response;
 

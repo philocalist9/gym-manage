@@ -1,8 +1,8 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard,
   Users,
@@ -27,6 +27,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 interface MenuItem {
   icon: LucideIcon;
@@ -83,9 +84,25 @@ const superAdminMenuItems: MenuItem[] = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const isTrainerDashboard = pathname.includes('/dashboard/trainer');
-  const isMemberDashboard = pathname.includes('/dashboard/member');
-  const isSuperAdminDashboard = pathname.includes('/dashboard/super-admin');
+  const { logout } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
+  // Determine which dashboard we're in
+  const isGymOwnerDashboard = pathname?.startsWith('/dashboard/gym-owner');
+  const isTrainerDashboard = pathname?.startsWith('/dashboard/trainer');
+  const isMemberDashboard = pathname?.startsWith('/dashboard/member');
+  const isSuperAdminDashboard = pathname?.startsWith('/dashboard/super-admin');
+  
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      // The redirect is handled in the useAuth hook
+    } catch (error) {
+      console.error('Failed to logout:', error);
+      setIsLoggingOut(false);
+    }
+  };
 
   const gymOwnerMenu: MenuItem[] = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard/gym-owner', isActive: true },
@@ -204,13 +221,13 @@ export default function Sidebar() {
           </Link>
         ))}
         
-        <Link
-          href="/login"
-          className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:text-red-300 hover:bg-[#1A2234] mt-4"
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:text-red-300 hover:bg-[#1A2234] mt-4 w-full text-left"
         >
           <LogOut className="w-5 h-5" strokeWidth={1.5} />
           <span className="text-sm">Logout</span>
-        </Link>
+        </button>
       </div>
     </div>
   );

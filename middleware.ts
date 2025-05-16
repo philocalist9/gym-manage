@@ -1,0 +1,87 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { verifyToken } from '@/app/utils/auth';
+
+// Define which paths require authentication
+const protectedPaths = [
+  '/dashboard',  // This will cover all dashboard routes
+  '/api/gym',    // Protect gym APIs, add more as needed
+];
+
+// Define public paths that should bypass authentication checks
+const publicPaths = [
+  '/login',
+  '/register',
+  '/api/login',
+  '/api/register',
+];
+
+// Define paths accessible only to certain roles
+const roleBasedPaths: Record<string, string[]> = {
+  'gym-owner': ['/dashboard/gym-owner'],
+  'member': ['/dashboard/member'],
+  'admin': ['/dashboard/admin'],
+};
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  
+  // Check if path is public
+  if (publicPaths.some(path => pathname.startsWith(path))) {
+    return NextResponse.next();
+  }
+  
+  // Check if path requires protection
+  const requiresAuth = protectedPaths.some(path => pathname.startsWith(path));
+  
+  if (requiresAuth) {
+    // Get token from cookies
+    const token = request.cookies.get('token')?.value;
+    
+    // Redirect to login if no token
+    if (!token) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('callbackUrl', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    
+    // Verify token
+    const userData = verifyToken(token);
+    
+    // If token is invalid, redirect to login
+    if (!userData) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('callbackUrl', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    
+    // Check role-based access
+    const userRole = userData.role;
+    const roleAccessPaths = roleBasedPaths[userRole] || [];
+    
+    // If trying to access a path restricted to a specific role
+    const checkingRoleAccess = Object.values(roleBasedPaths).some(paths => 
+      paths.some(path => pathname.startsWith(path))
+    );
+    
+    if (checkingRoleAccess && !roleAccessPaths.some(path => pathname.startsWith(path))) {
+      // Redirect to appropriate dashboard based on role
+      return NextResponse.redirect(new URL(`/dashboard/${userRole}`, request.url));
+    }
+  }
+  
+  return NextResponse.next();
+}
+
+// Configure the middleware to run on specific paths
+export const config = {
+  matcher: [
+    /*
+     * Match all paths except for:
+     * 1. /api/auth (NextAuth.js paths)
+     * 2. /favicon.ico, /images/, /fonts/ (Static files)
+     * 3. /_next/ (Next.js internals)
+     */
+    '/((?!api/auth|_next/static|_next/image|favicon.ico|images|fonts).*)',
+  ],
+};
