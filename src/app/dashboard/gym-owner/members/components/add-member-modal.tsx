@@ -13,6 +13,7 @@ interface Member {
   id: string;
   name: string;
   email: string;
+  password: string;
   membershipType: "Basic" | "Premium" | "VIP";
   status: "Active" | "Inactive" | "Pending";
   joiningDate: string;
@@ -25,6 +26,7 @@ export default function AddMemberModal({ isOpen, onClose, onAdd }: AddMemberModa
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    password: "",
     membershipType: "Basic",
     trainer: "",
   });
@@ -46,7 +48,8 @@ export default function AddMemberModal({ isOpen, onClose, onAdd }: AddMemberModa
     setFormData({
       name: "",
       email: "",
-      membershipType: "Basic",
+      password: "",
+      membershipType: "Basic" as const,
       trainer: "",
     });
     onClose();
@@ -90,6 +93,19 @@ export default function AddMemberModal({ isOpen, onClose, onAdd }: AddMemberModa
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+                className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
                 className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
               />

@@ -13,6 +13,7 @@ interface Trainer {
   id: string;
   name: string;
   email: string;
+  password: string;
   specialization: string;
   status: "Available" | "In Session" | "Off Duty";
   totalClients: number;
@@ -24,6 +25,7 @@ export default function AddTrainerModal({ isOpen, onClose, onAdd }: AddTrainerMo
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    password: "",
     specialization: "",
     status: "Available" as const,
   });
@@ -78,6 +80,20 @@ export default function AddTrainerModal({ isOpen, onClose, onAdd }: AddTrainerMo
               required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-400 mb-1">
+              Password
+            </label>
+            <input
+              type="password"
+              id="password"
+              required
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-400 focus:outline-none focus:border-blue-500"
             />
           </div>
