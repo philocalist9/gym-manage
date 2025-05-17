@@ -20,7 +20,10 @@ export async function GET(
 
     await connectDB();
     
-    const trainer = await Trainer.findById(params.id).select('-password');
+    // Populate the gym data to get access to gym name and address
+    const trainer = await Trainer.findById(params.id)
+      .select('-password')
+      .populate('gymId', 'gymName address phone email');
     
     if (!trainer) {
       return NextResponse.json(
@@ -29,8 +32,11 @@ export async function GET(
       );
     }
 
-    // Check if the gym owner is authorized to see this trainer
-    if (userData.role !== 'super-admin' && trainer.gymId.toString() !== userData.id) {
+    // Check if the user is authorized to see this trainer
+    // Allow access if: 1) user is super-admin, 2) user is the gym owner of this trainer, or 3) user is the trainer themselves
+    if (userData.role !== 'super-admin' && 
+        trainer.gymId.toString() !== userData.id && 
+        trainer._id.toString() !== userData.id) {
       return NextResponse.json(
         { error: 'Forbidden: You do not have access to this trainer' },
         { status: 403 }
@@ -121,8 +127,13 @@ export async function PUT(
       );
     }
 
-    // Only gym owners and admins can update trainers
-    if (userData.role !== 'gym-owner' && userData.role !== 'super-admin') {
+    // Allow updates if user is: 1) a super-admin, 2) a gym owner, or 3) the trainer themselves
+    const allowedToUpdate = 
+      userData.role === 'super-admin' || 
+      userData.role === 'gym-owner' || 
+      (userData.role === 'trainer' && userData.id === params.id);
+    
+    if (!allowedToUpdate) {
       return NextResponse.json(
         { error: 'Forbidden: Insufficient permissions' },
         { status: 403 }
@@ -132,7 +143,7 @@ export async function PUT(
     await connectDB();
     
     const body = await req.json();
-    const { name, email, specialization, phone } = body;
+    const { name, email, specialization, phone, bio, experience, gymName, gymAddress } = body;
 
     // Find the trainer first to check ownership
     const trainer = await Trainer.findById(params.id);
@@ -144,10 +155,14 @@ export async function PUT(
       );
     }
 
-    // Ensure the gym owner can only update their own trainers
-    if (userData.role !== 'super-admin' && trainer.gymId.toString() !== userData.id) {
+    // Ensure appropriate permissions for updating
+    const isSuperAdmin = userData.role === 'super-admin';
+    const isGymOwnerWithRights = userData.role === 'gym-owner' && trainer.gymId.toString() === userData.id;
+    const isTrainerSelf = userData.role === 'trainer' && trainer._id.toString() === userData.id;
+    
+    if (!isSuperAdmin && !isGymOwnerWithRights && !isTrainerSelf) {
       return NextResponse.json(
-        { error: 'Forbidden: You can only update your own trainers' },
+        { error: 'Forbidden: You can only update your own profile or trainers' },
         { status: 403 }
       );
     }

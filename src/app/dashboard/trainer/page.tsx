@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Activity, Calendar, Clock, DumbellIcon, Users, Wallet } from "lucide-react";
 import { formatDate } from "@/app/utils/date-utils";
+import { useAuth } from "@/app/hooks/useAuth";
 import {
   LineChart,
   Line,
@@ -32,6 +33,7 @@ interface Session {
 }
 
 export default function TrainerDashboard() {
+  const { user } = useAuth();
   const [clients] = useState<Client[]>([
     {
       id: "1",
@@ -101,12 +103,12 @@ export default function TrainerDashboard() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-semibold text-white">Trainer Dashboard</h1>
-          <p className="text-gray-400">Welcome back, Trainer</p>
+          <p className="text-gray-400">Welcome back, {user?.name || "Trainer"}</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="px-4 py-2 bg-[#151C2C] rounded-lg text-gray-200">
-            <p className="text-sm text-gray-400">Current Status</p>
-            <p className="font-medium">Available</p>
+            <p className="text-sm text-gray-400">Gym</p>
+            <p className="font-medium">{user?.gymName || "Loading..."}</p>
           </div>
         </div>
       </div>
