@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { Search, Filter, MoreVertical, Edit2, CheckCircle, XCircle, AlertTriangle, Trash2, Loader } from 'lucide-react';
 import { format } from 'date-fns';
-import AddGymModal from './components/add-gym-modal';
 import EditGymModal from './components/edit-gym-modal';
 
 // This is the API/Database Gym interface
@@ -25,8 +24,8 @@ interface Gym {
   name: string;
   owner: string;
   location: string;
-  memberCount: number;
-  revenue: number;
+  email: string;
+  phone: string;
   status: 'active' | 'inactive' | 'pending';
   joinedDate: string;
 }
@@ -42,7 +41,6 @@ export default function GymManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('createdAt');
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedGym, setSelectedGym] = useState<Gym | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [gyms, setGyms] = useState<GymData[]>([]);
@@ -55,6 +53,7 @@ export default function GymManagement() {
     pages: 0
   });
   const [actionLoading, setActionLoading] = useState<string | null>(null); // Stores gym ID during action
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   
   // Fetch gyms from API
   useEffect(() => {
@@ -80,18 +79,31 @@ export default function GymManagement() {
       }
       
       // Fetch data from API
+      console.log(`Fetching gyms with parameters: ${queryParams.toString()}`);
       const response = await fetch(`/api/admin/gyms?${queryParams.toString()}`);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch gyms');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch gyms');
       }
       
       const data = await response.json();
+      console.log('Fetched gyms data:', data);
       setGyms(data.gyms);
       setPagination(data.pagination);
+      setLastRefreshed(new Date());
       
     } catch (err: any) {
+      console.error('Error fetching gyms:', err);
       setError(err.message || 'An error occurred while fetching gyms');
+      // Reset gyms and pagination on error
+      setGyms([]);
+      setPagination({
+        total: 0,
+        page: 1,
+        limit: 10,
+        pages: 0
+      });
     } finally {
       setLoading(false);
     }
@@ -195,28 +207,58 @@ export default function GymManagement() {
       name: gymData.gymName,
       owner: gymData.ownerName,
       location: gymData.address,
-      memberCount: 0, // We don't have this data anymore
-      revenue: 0,     // We don't have this data anymore
+      email: gymData.email,
+      phone: gymData.phone,
       status: gymData.status,
       joinedDate: gymData.createdAt
     };
   };
 
-  // Handle adding a new gym (modal is using the old format)
-  const handleAddGym = (newGym: Omit<Gym, "id">) => {
-    // We'll need to refresh the data to get the actual gym from the backend
-    fetchGyms();
-    setIsAddModalOpen(false);
-  };
-
   // Handle updating a gym (modal is using the old format)
-  const handleUpdateGym = (gymId: number, updates: Partial<Gym>) => {
+  const handleUpdateGym = async (gymId: number, updates: Partial<Gym>) => {
     // Find the real gym
     const realGym = gyms.find(g => parseInt(g._id.substring(g._id.length - 6), 16) === gymId);
     
     if (realGym) {
-      // For now, let's just refresh the data
-      fetchGyms();
+      try {
+        const response = await fetch('/api/admin/gyms', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            gymId: realGym._id,
+            updates: {
+              gymName: updates.name,
+              ownerName: updates.owner,
+              address: updates.location,
+              email: updates.email,
+              phone: updates.phone
+            }
+          }),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update gym');
+        }
+        
+        // Update local state with the changes
+        const updatedGyms = gyms.map(gym => 
+          gym._id === realGym._id ? { 
+            ...gym, 
+            gymName: updates.name || gym.gymName,
+            ownerName: updates.owner || gym.ownerName,
+            address: updates.location || gym.address,
+            email: updates.email || gym.email,
+            phone: updates.phone || gym.phone
+          } : gym
+        );
+        
+        setGyms(updatedGyms);
+      } catch (err: any) {
+        setError(err.message || 'An error occurred while updating the gym');
+      }
     }
     
     setSelectedGym(null);
@@ -225,7 +267,14 @@ export default function GymManagement() {
   return (
     <div className="p-6">
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h1 className="text-2xl font-bold">Gym Management</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Gym Management</h1>
+          {lastRefreshed && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Last refreshed: {format(lastRefreshed, 'dd MMM yyyy HH:mm:ss')}
+            </p>
+          )}
+        </div>
         
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search Input */}
@@ -261,12 +310,22 @@ export default function GymManagement() {
             <Filter className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
           </div>
           
-          {/* Add New Gym Button */}
+          {/* Refresh Button */}
           <button
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
-            onClick={() => setIsAddModalOpen(true)}
+            className="bg-gray-500 hover:bg-gray-600 text-white font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-1"
+            onClick={() => fetchGyms()}
+            disabled={loading}
           >
-            Add New Gym
+            {loading ? (
+              <><Loader className="h-4 w-4 animate-spin" /> Refreshing...</>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -434,7 +493,7 @@ export default function GymManagement() {
               <span className="font-medium">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of{' '}
               <span className="font-medium">{pagination.total}</span> results
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <button
                 onClick={handlePrevPage}
                 disabled={pagination.page === 1}
@@ -446,6 +505,12 @@ export default function GymManagement() {
               >
                 Previous
               </button>
+              
+              {/* Page indicator */}
+              <div className="px-2 py-1 text-sm font-medium">
+                Page <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded">{pagination.page}</span> of {pagination.pages}
+              </div>
+              
               <button
                 onClick={handleNextPage}
                 disabled={pagination.page >= pagination.pages}
@@ -463,7 +528,6 @@ export default function GymManagement() {
       </div>
       
       {/* Modals */}
-      <AddGymModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={handleAddGym} />
       <EditGymModal isOpen={selectedGym !== null} onClose={() => setSelectedGym(null)} onUpdate={handleUpdateGym} gym={selectedGym} />
     </div>
   );

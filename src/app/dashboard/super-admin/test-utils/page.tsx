@@ -57,6 +57,27 @@ export default function SuperAdminTest() {
     }
   };
 
+  const checkDatabaseStatus = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/admin/gyms/check');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to check database status');
+      }
+      
+      const data = await response.json();
+      setResult(data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to check database connection');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const testAuthDebug = async () => {
     setLoading(true);
     setError(null);
@@ -109,6 +130,18 @@ export default function SuperAdminTest() {
               Login failed!
             </div>
           )}
+        </div>
+        
+        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <h2 className="text-lg font-medium mb-3">Check Database Status</h2>
+          <button
+            onClick={checkDatabaseStatus}
+            disabled={loading}
+            className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {loading ? 'Checking...' : 'Check Database Connection'}
+          </button>
+          <p className="mt-2 text-sm text-gray-500">Check MongoDB connection and get gym statistics</p>
         </div>
         
         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
