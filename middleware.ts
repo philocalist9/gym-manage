@@ -20,7 +20,8 @@ const publicPaths = [
 const roleBasedPaths: Record<string, string[]> = {
   'gym-owner': ['/dashboard/gym-owner'],
   'member': ['/dashboard/member'],
-  'admin': ['/dashboard/admin'],
+  'trainer': ['/dashboard/trainer'],
+  'super-admin': ['/dashboard/super-admin'],
 };
 
 export function middleware(request: NextRequest) {
@@ -47,6 +48,17 @@ export function middleware(request: NextRequest) {
     
     // Verify token
     const userData = verifyToken(token);
+    
+    // Special case: If it's a super admin token
+    if (userData && userData.role === 'super-admin' && userData.email === 'super@admin.com') {
+      // Always allow super admin access, regardless of database state
+      // This ensures super admin can always access the system even if deleted from database
+      
+      // Special handling for super-admin routes
+      if (pathname.startsWith('/dashboard/super-admin')) {
+        return NextResponse.next();
+      }
+    }
     
     // If token is invalid, redirect to login
     if (!userData) {

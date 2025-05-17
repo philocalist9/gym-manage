@@ -42,6 +42,11 @@ const gymSchema = new mongoose.Schema({
     type: String,
     enum: ['active', 'inactive', 'pending'],
     default: 'pending',
+  },
+  role: {
+    type: String,
+    enum: ['super-admin', 'gym-owner', 'trainer', 'member'],
+    default: 'gym-owner',
   }
 });
 

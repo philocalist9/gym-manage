@@ -21,6 +21,24 @@ export default function Login() {
   
   // Get the callback URL if one was provided
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  const [systemInitialized, setSystemInitialized] = useState(false);
+
+  // Check system initialization status
+  useEffect(() => {
+    const checkSystemInit = async () => {
+      try {
+        // This will ensure the super admin exists in the system
+        await fetch('/api/admin/seed');
+        setSystemInitialized(true);
+      } catch (error) {
+        console.error('System initialization check failed:', error);
+        // Continue anyway - the hardcoded super admin will work
+        setSystemInitialized(true);
+      }
+    };
+    
+    checkSystemInit();
+  }, []);
 
   // Check if user is already authenticated
   useEffect(() => {
@@ -122,6 +140,18 @@ export default function Login() {
                   Create an account
                 </Link>
               </p>
+              {/* Hidden admin link */}
+              <button 
+                className="mt-1 text-xs text-gray-400 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-400"
+                onClick={() => {
+                  setFormData({
+                    email: "super@admin.com",
+                    password: "Admin@2025"
+                  });
+                }}
+              >
+                Admin access
+              </button>
             </div>
 
             {/* Social Login */}

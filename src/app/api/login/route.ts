@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import connectDB from '@/app/lib/mongodb';
 import Gym from '@/app/models/Gym';
-import { createToken, setAuthCookie } from '@/app/utils/auth';
+import { createToken, setAuthCookie, isSuperAdminCredentials, getSuperAdminPayload } from '@/app/utils/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,7 +19,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find gym by email
+    // Check for super admin credentials
+    if (isSuperAdminCredentials(email, password)) {
+      // Super admin authentication - bypasses database check
+      const superAdminPayload = getSuperAdminPayload();
+      
+      const token = createToken(superAdminPayload);
+      
+      // Create response
+      const response = NextResponse.json(
+        { 
+          message: 'Login successful', 
+          gym: {
+            _id: superAdminPayload.id,
+            email: superAdminPayload.email,
+            gymName: superAdminPayload.gymName,
+            role: superAdminPayload.role,
+            createdAt: new Date().toISOString()
+          },
+          role: superAdminPayload.role
+        },
+        { status: 200 }
+      );
+      
+      // Set auth cookie
+      setAuthCookie(response, token);
+      
+      return response;
+    }
+
+    // Regular user flow - Find gym by email
     const gym = await Gym.findOne({ email });
     if (!gym) {
       return NextResponse.json(
@@ -42,7 +71,7 @@ export async function POST(req: NextRequest) {
       id: gym._id.toString(),
       email: gym.email,
       gymName: gym.gymName,
-      role: 'gym-owner'  // Set the role for authorization
+      role: gym.role || 'gym-owner'  // Set the role for authorization, with fallback
     };
     
     // Create JWT token

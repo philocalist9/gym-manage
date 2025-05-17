@@ -5,6 +5,10 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'gymsync-secure-jwt-token';
 const TOKEN_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
 
+// Super admin credentials
+const SUPER_ADMIN_EMAIL = 'super@admin.com';
+const SUPER_ADMIN_PASSWORD = 'Admin@2025';
+
 export interface TokenPayload {
   id: string;
   email: string;
@@ -99,6 +103,25 @@ export function clearAuthCookie(response: NextResponse) {
     expires: new Date(0),
     path: '/',
   });
+}
+
+/**
+ * Check if credentials match super admin
+ */
+export function isSuperAdminCredentials(email: string, password: string): boolean {
+  return email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD;
+}
+
+/**
+ * Get super admin token payload
+ */
+export function getSuperAdminPayload() {
+  return {
+    id: 'super-admin-id',
+    email: SUPER_ADMIN_EMAIL,
+    gymName: 'System Administrator',
+    role: 'super-admin'
+  };
 }
 
 /**
