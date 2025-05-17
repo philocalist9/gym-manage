@@ -17,11 +17,14 @@ export default function StatusActionButtons({
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const handleStatusChange = async (newStatus: 'active' | 'inactive' | 'pending') => {
     if (newStatus === currentStatus) return;
     
     setActionLoading(true);
     setError(null);
+    setSuccessMessage(null);
     
     try {
       const response = await fetch('/api/admin/gyms', {
@@ -35,6 +38,15 @@ export default function StatusActionButtons({
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to update gym status');
+      }
+      
+      const data = await response.json();
+      
+      // Show success message if email was sent
+      if (data.emailSent) {
+        setSuccessMessage(`Status updated and email notification sent`);
+        // Clear success message after 5 seconds
+        setTimeout(() => setSuccessMessage(null), 5000);
       }
       
       onStatusChange();
@@ -110,6 +122,13 @@ export default function StatusActionButtons({
       
       {error && (
         <p className="text-xs text-red-500 ml-2">{error}</p>
+      )}
+      
+      {successMessage && (
+        <p className="text-xs text-green-500 ml-2 flex items-center">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          {successMessage}
+        </p>
       )}
     </div>
   );

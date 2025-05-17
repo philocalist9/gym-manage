@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/app/lib/mongodb';
 import Gym from '@/app/models/Gym';
 import { verifyAuth } from '@/app/utils/auth';
+import { sendStatusChangeEmail } from '@/app/utils/email';
 
 export async function GET(req: NextRequest) {
   try {
@@ -190,25 +191,49 @@ export async function PUT(req: NextRequest) {
     
     console.log(`PUT /api/admin/gyms - Updating gym ${gymId} with:`, updateData);
     
+    // Find gym first to get the current data and check if status is changing
+    const gym = await Gym.findById(gymId).select('-password');
+    
+    if (!gym) {
+      return NextResponse.json(
+        { error: 'Gym not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if we're changing the status
+    const isStatusChange = status && gym.status !== status;
+
     // Update gym
     const updatedGym = await Gym.findByIdAndUpdate(
       gymId,
       updateData,
       { new: true, runValidators: true }
     ).select('-password');
-    
-    if (!updatedGym) {
-      return NextResponse.json(
-        { error: 'Gym not found' },
-        { status: 404 }
-      );
-    }
-    
+
     const updateMessage = status ? 'status' : 'information';
+    
+    // Send email notification if status is changing
+    if (isStatusChange && gym.email) {
+      try {
+        // Use the status from updateData to ensure we're using the new status
+        await sendStatusChangeEmail(
+          gym.email, 
+          gym.gymName, 
+          gym.ownerName,
+          status as 'active' | 'inactive' | 'pending'
+        );
+        console.log(`Status change email sent to ${gym.email} for gym ${gym.gymName}`);
+      } catch (emailError) {
+        console.error('Failed to send status change email:', emailError);
+        // We don't want to fail the status update if the email fails
+      }
+    }
     
     return NextResponse.json({
       message: `Gym ${updateMessage} updated successfully`,
-      gym: updatedGym
+      gym: updatedGym,
+      emailSent: isStatusChange
     }, { status: 200 });
     
   } catch (error: any) {
