@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, Edit2, CheckCircle, XCircle, AlertTriangle, Trash2, Loader } from 'lucide-react';
+import { Search, Filter, Loader, HelpCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import EditGymModal from './components/edit-gym-modal';
+import StatusActionButtons from '../components/status-action-buttons';
+import StatusHelpModal from '../components/status-help-modal';
+import StatusLegend from '../components/status-legend';
 
 // This is the API/Database Gym interface
 interface GymData {
@@ -46,6 +49,7 @@ export default function GymManagement() {
   const [gyms, setGyms] = useState<GymData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isStatusHelpOpen, setIsStatusHelpOpen] = useState(false);
   const [pagination, setPagination] = useState<PaginationData>({
     total: 0,
     page: 1,
@@ -330,10 +334,25 @@ export default function GymManagement() {
         </div>
       </div>
 
+      <div className="mb-4 flex items-center justify-between">
+        <button
+          onClick={() => setIsStatusHelpOpen(true)}
+          className="flex items-center text-sm text-blue-600 hover:text-blue-800 transition-colors"
+        >
+          <HelpCircle className="h-4 w-4 mr-1" />
+          <span>Status meanings and login implications</span>
+        </button>
+      </div>
+      
+      {/* Status Legend - quick reference */}
+      <StatusLegend />
+
       {/* Error Message */}
       {error && (
         <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 flex items-center">
-          <AlertTriangle className="h-5 w-5 mr-2" />
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 3.75l-6 6m0 0l6 6m-6-6h18" />
+          </svg>
           <p>{error}</p>
         </div>
       )}
@@ -399,9 +418,14 @@ export default function GymManagement() {
                       {gym.address}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2.5 py-1 inline-flex text-xs font-medium rounded-full ${getStatusBadgeStyle(gym.status)}`}>
-                        {gym.status.charAt(0).toUpperCase() + gym.status.slice(1)}
-                      </span>
+                      <div className="group relative">
+                        <span className={`px-2.5 py-1 inline-flex text-xs font-medium rounded-full ${getStatusBadgeStyle(gym.status)}`}>
+                          {gym.status.charAt(0).toUpperCase() + gym.status.slice(1)}
+                        </span>
+                        <div className="absolute left-0 -bottom-8 bg-black text-white text-xs p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                          {gym.status === 'active' ? 'Can login' : 'Cannot login'}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                       {formatDate(gym.createdAt)}
@@ -409,43 +433,23 @@ export default function GymManagement() {
                     
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="relative flex items-center gap-2">
-                        {/* Status change actions */}
-                        {gym.status !== 'active' && (
-                          <button
-                            onClick={() => handleStatusChange(gym._id, 'active')}
-                            disabled={actionLoading === gym._id}
-                            title="Activate Gym"
-                            className="p-1 rounded hover:bg-green-100 dark:hover:bg-green-900/20 text-green-600 dark:text-green-400"
-                          >
-                            {actionLoading === gym._id ? 
-                              <Loader className="h-5 w-5 animate-spin" /> : 
-                              <CheckCircle className="h-5 w-5" />
-                            }
-                          </button>
-                        )}
+                        {/* Status action buttons - uses the enhanced component */}
+                        <StatusActionButtons 
+                          gymId={gym._id}
+                          currentStatus={gym.status}
+                          onStatusChange={() => fetchGyms()}
+                        />
                         
-                        {gym.status !== 'inactive' && (
-                          <button
-                            onClick={() => handleStatusChange(gym._id, 'inactive')}
-                            disabled={actionLoading === gym._id}
-                            title="Deactivate Gym"
-                            className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
-                          >
-                            {actionLoading === gym._id ? 
-                              <Loader className="h-5 w-5 animate-spin" /> : 
-                              <XCircle className="h-5 w-5" />
-                            }
-                          </button>
-                        )}
-                        
-                        {/* Edit button - temporarily disabled until we fix the modal */}
+                        {/* Edit button */}
                         <button
                           onClick={() => setSelectedGym(convertToOldGymFormat(gym))}
                           disabled={actionLoading === gym._id}
                           title="Edit Gym"
                           className="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400"
                         >
-                          <Edit2 className="h-5 w-5" />
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.862 4.487a2.121 2.121 0 00-3.004 0l-9 9a2.121 2.121 0 000 3.004l3.415 3.415a2.121 2.121 0 003.004 0l9-9a2.121 2.121 0 000-3.004l-3.415-3.415z" />
+                          </svg>
                         </button>
                         
                         {/* Delete button */}
@@ -473,7 +477,9 @@ export default function GymManagement() {
                             title="Delete Gym"
                             className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400"
                           >
-                            <Trash2 className="h-5 w-5" />
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                           </button>
                         )}
                       </div>
@@ -529,6 +535,7 @@ export default function GymManagement() {
       
       {/* Modals */}
       <EditGymModal isOpen={selectedGym !== null} onClose={() => setSelectedGym(null)} onUpdate={handleUpdateGym} gym={selectedGym} />
+      <StatusHelpModal isOpen={isStatusHelpOpen} onClose={() => setIsStatusHelpOpen(false)} />
     </div>
   );
 }

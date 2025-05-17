@@ -6,12 +6,14 @@ import Navbar from "../providers/navbar";
 import Image from "next/image";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from "../hooks/useAuth"; // Import the auth hook
+import StatusNotification from "../components/status-notification";
 
 export default function Login() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showMessage, setShowMessage] = useState(searchParams.get('registered') === 'true');
   const [errorMessage, setErrorMessage] = useState('');
+  const [accountStatus, setAccountStatus] = useState<'active' | 'pending' | 'inactive' | null>(null);
   const { login, loading, error, isAuthenticated, user } = useAuth(); // Use the auth hook
   
   const [formData, setFormData] = useState({
@@ -78,6 +80,7 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setAccountStatus(null);
     
     try {
       const result = await login(formData.email, formData.password);
@@ -94,7 +97,20 @@ export default function Login() {
       }
       
     } catch (error: any) {
-      setErrorMessage(error.message || 'Login failed. Please check your credentials.');
+      const errorMsg = error.message || 'Login failed. Please check your credentials.';
+      
+      // Handle account status errors
+      if (errorMsg.includes('pending approval')) {
+        setAccountStatus('pending');
+        setErrorMessage('Your account is pending approval by the administrator.');
+      } else if (errorMsg.includes('deactivated') || errorMsg.includes('inactive')) {
+        setAccountStatus('inactive');
+        setErrorMessage('Your account has been deactivated. Please contact the administrator.');
+      } else if (errorMsg.includes('Invalid credentials')) {
+        setErrorMessage('Invalid email or password. Please try again.');
+      } else {
+        setErrorMessage(errorMsg);
+      }
     }
   };
 
@@ -115,11 +131,29 @@ export default function Login() {
         
         {errorMessage && (
           <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-full max-w-md">
-            <div className="m-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 flex items-center justify-center space-x-2">
+            <div className="m-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800 flex items-center space-x-2">
               <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              <p className="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
+              <div>
+                <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                  {errorMessage.includes('pending') ? 'Account Pending Approval' : 
+                   errorMessage.includes('deactivated') ? 'Account Deactivated' : 'Login Failed'}
+                </p>
+                <p className="text-sm text-red-500 dark:text-red-300 mt-1">{errorMessage}</p>
+                
+                {errorMessage.includes('pending') && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Your gym account is waiting for administrator approval. Please check back later.
+                  </p>
+                )}
+                
+                {errorMessage.includes('deactivated') && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Your gym account has been deactivated. Please contact the administrator for assistance.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -140,6 +174,13 @@ export default function Login() {
                   Create an account
                 </Link>
               </p>
+              
+              {/* Account Status Notification */}
+              {accountStatus && accountStatus !== 'active' && (
+                <div className="mt-4">
+                  <StatusNotification status={accountStatus} />
+                </div>
+              )}
               {/* Hidden admin link */}
               <button 
                 className="mt-1 text-xs text-gray-400 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-400"

@@ -81,6 +81,14 @@ export function useAuth() {
       const data = await res.json();
 
       if (!res.ok) {
+        // Check if this is an account status issue
+        if (res.status === 403 && data.accountStatus) {
+          // Include the status in the error message for better handling
+          const statusMsg = data.accountStatus === 'pending' 
+            ? 'Your account is pending approval by the administrator.'
+            : 'Your account has been deactivated. Please contact the administrator.';
+          throw new Error(statusMsg);
+        }
         throw new Error(data.error || 'Login failed');
       }
 

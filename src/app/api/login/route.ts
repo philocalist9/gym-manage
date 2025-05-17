@@ -66,6 +66,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // For gym owners, check status - only allow active accounts to log in
+    if (gym.role === 'gym-owner' && gym.status !== 'active') {
+      const statusMessage = gym.status === 'pending' 
+        ? 'Your account is pending approval by the administrator.' 
+        : 'Your account has been deactivated. Please contact the administrator.';
+      
+      return NextResponse.json(
+        { error: statusMessage, accountStatus: gym.status },
+        { status: 403 }
+      );
+    }
+
     // Create payload for token
     const tokenPayload = { 
       id: gym._id.toString(),
