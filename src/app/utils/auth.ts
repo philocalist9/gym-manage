@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'gymsync-secure-jwt-token';
 const TOKEN_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
+const SUPER_ADMIN_SESSION_MAX_AGE = 4 * 60 * 60; // 4 hours in seconds (more strict for super admin)
 
 // Super admin credentials
 const SUPER_ADMIN_EMAIL = 'super@admin.com';
@@ -77,19 +78,22 @@ export function verifyAuth(req: NextRequest) {
 /**
  * Create a JWT token for a user
  */
-export function createToken(payload: Omit<TokenPayload, 'iat' | 'exp'>) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_MAX_AGE });
+export function createToken(payload: Omit<TokenPayload, 'iat' | 'exp'>, isSuperAdmin = false) {
+  const expiresIn = isSuperAdmin ? SUPER_ADMIN_SESSION_MAX_AGE : TOKEN_MAX_AGE;
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 
 /**
  * Set authentication cookie in response
  */
-export function setAuthCookie(response: NextResponse, token: string) {
+export function setAuthCookie(response: NextResponse, token: string, isSuperAdmin = false) {
+  const maxAge = isSuperAdmin ? SUPER_ADMIN_SESSION_MAX_AGE : TOKEN_MAX_AGE;
+  
   response.cookies.set('token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: TOKEN_MAX_AGE,
+    maxAge,
     path: '/'
   });
 }
@@ -146,5 +150,28 @@ export async function getUserSession(): Promise<SessionUser | null> {
   } catch (error) {
     console.error('Error getting user session:', error);
     return null;
+  }
+}
+
+/**
+ * Check if a session is close to expiry (needs refresh)
+ * Returns true if token expiration is within the threshold window
+ */
+export function isSessionNearExpiry(token: string, thresholdMinutes = 30): boolean {
+  if (!token) return false;
+  
+  try {
+    const decoded = verifyToken(token);
+    if (!decoded) return false;
+    
+    const currentTime = Math.floor(Date.now() / 1000);
+    const expiryTime = decoded.exp;
+    const thresholdSeconds = thresholdMinutes * 60;
+    
+    // Return true if expiration is within the threshold window
+    return expiryTime - currentTime <= thresholdSeconds;
+  } catch (error) {
+    console.error('Error checking session expiry:', error);
+    return false;
   }
 }

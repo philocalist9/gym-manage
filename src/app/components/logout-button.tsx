@@ -13,12 +13,25 @@ export default function LogoutButton({
   variant = 'default',
   className = ''
 }: LogoutButtonProps) {
-  const { logout, loading } = useAuth();
+  const { logout, loading, user } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
+    
     try {
+      // For super admin, confirm before logout
+      if (user?.role === 'super-admin') {
+        const confirmLogout = window.confirm(
+          'You are logging out of a Super Admin session. Continue?'
+        );
+        
+        if (!confirmLogout) {
+          setIsLoggingOut(false);
+          return;
+        }
+      }
+      
       await logout();
     } catch (error) {
       console.error('Failed to logout:', error);

@@ -24,7 +24,29 @@ export function useAuth() {
     loading: true,
     error: null
   });
-
+  const [lastActivity, setLastActivity] = useState<number>(Date.now());
+  
+  // Track user activity
+  useEffect(() => {
+    const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+    
+    const updateActivity = () => {
+      setLastActivity(Date.now());
+    };
+    
+    // Register event listeners for user activity
+    activityEvents.forEach(event => {
+      window.addEventListener(event, updateActivity);
+    });
+    
+    return () => {
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, updateActivity);
+      });
+    };
+  }, []);
+  
+  // Session refresh functionality
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -54,6 +76,24 @@ export function useAuth() {
           loading: false,
           error: null
         });
+        
+        // For super admin, check session freshness periodically
+        if (data.user?.role === 'super-admin') {
+          // Set up polling for session freshness
+          const checkInterval = setInterval(() => {
+            // Check if user has been inactive for 30 minutes (for super admin)
+            const inactivityThreshold = 30 * 60 * 1000; // 30 minutes in milliseconds
+            const currentTime = Date.now();
+            
+            if ((currentTime - lastActivity) > inactivityThreshold) {
+              // Log out automatically due to inactivity
+              clearInterval(checkInterval);
+              logout();
+            }
+          }, 60000); // Check every minute
+          
+          return () => clearInterval(checkInterval);
+        }
       } catch (error) {
         setAuthState({
           user: null,
@@ -64,6 +104,13 @@ export function useAuth() {
     };
 
     fetchUser();
+    
+    // Set up periodic checks to refresh session if needed
+    const refreshInterval = setInterval(() => {
+      fetchUser();
+    }, 15 * 60 * 1000); // Check every 15 minutes
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -146,12 +193,52 @@ export function useAuth() {
     }
   };
 
+  // Function to refresh the session
+  const refreshSession = async () => {
+    try {
+      const res = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          // If unauthorized, clear the user state
+          setAuthState({
+            user: null,
+            loading: false,
+            error: null
+          });
+          return false;
+        }
+        throw new Error('Failed to refresh session');
+      }
+
+      const data = await res.json();
+      
+      // Update user state with refreshed data
+      setAuthState({
+        user: data.user,
+        loading: false,
+        error: null
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Session refresh failed:', error);
+      return false;
+    }
+  };
+
   return {
     user: authState.user,
     loading: authState.loading,
     error: authState.error,
     login,
     logout,
+    refreshSession, // Expose the refresh function
     isAuthenticated: !!authState.user,
+    lastActivity,
+    updateActivity: () => setLastActivity(Date.now())
   };
 }

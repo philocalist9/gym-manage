@@ -24,7 +24,8 @@ export async function POST(req: NextRequest) {
       // Super admin authentication - bypasses database check
       const superAdminPayload = getSuperAdminPayload();
       
-      const token = createToken(superAdminPayload);
+      // Create token with super admin flag for shorter expiration
+      const token = createToken(superAdminPayload, true);
       
       // Create response
       const response = NextResponse.json(
@@ -42,8 +43,8 @@ export async function POST(req: NextRequest) {
         { status: 200 }
       );
       
-      // Set auth cookie
-      setAuthCookie(response, token);
+      // Set auth cookie with super admin flag for shorter expiration
+      setAuthCookie(response, token, true);
       
       return response;
     }
