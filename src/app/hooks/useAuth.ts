@@ -113,7 +113,7 @@ export function useAuth() {
     return () => clearInterval(refreshInterval);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, role: string = 'gym-owner') => {
     setAuthState(prev => ({ ...prev, loading: true, error: null }));
     try {
       const res = await fetch('/api/login', {
@@ -121,7 +121,7 @@ export function useAuth() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, role }),
         credentials: 'include',
       });
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import connectDB from '@/app/lib/mongodb';
 import Gym from '@/app/models/Gym';
+import Trainer from '@/app/models/Trainer';
 import { createToken, setAuthCookie, isSuperAdminCredentials, getSuperAdminPayload } from '@/app/utils/auth';
 
 export async function POST(req: NextRequest) {
@@ -9,7 +10,7 @@ export async function POST(req: NextRequest) {
     await connectDB();
     
     const body = await req.json();
-    const { email, password } = body;
+    const { email, password, role = 'gym-owner' } = body;
 
     // Validate input
     if (!email || !password) {
@@ -49,9 +50,21 @@ export async function POST(req: NextRequest) {
       return response;
     }
 
-    // Regular user flow - Find gym by email
-    const gym = await Gym.findOne({ email });
-    if (!gym) {
+    // Determine which model to use based on role
+    let user;
+    let userRole;
+
+    // Check if login is for a trainer
+    if (role === 'trainer') {
+      user = await Trainer.findOne({ email });
+      userRole = 'trainer';
+    } else {
+      // Default to gym owner
+      user = await Gym.findOne({ email });
+      userRole = 'gym-owner';
+    }
+
+    if (!user) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -59,7 +72,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify password
-    const isPasswordValid = await bcrypt.compare(password, gym.password);
+    const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
@@ -68,38 +81,38 @@ export async function POST(req: NextRequest) {
     }
 
     // For gym owners, check status - only allow active accounts to log in
-    if (gym.role === 'gym-owner' && gym.status !== 'active') {
-      const statusMessage = gym.status === 'pending' 
+    if (userRole === 'gym-owner' && user.status !== 'active') {
+      const statusMessage = user.status === 'pending' 
         ? 'Your account is pending approval by the administrator.' 
         : 'Your account has been deactivated. Please contact the administrator.';
       
       return NextResponse.json(
-        { error: statusMessage, accountStatus: gym.status },
+        { error: statusMessage, accountStatus: user.status },
         { status: 403 }
       );
     }
 
     // Create payload for token
     const tokenPayload = { 
-      id: gym._id.toString(),
-      email: gym.email,
-      gymName: gym.gymName,
-      role: gym.role || 'gym-owner'  // Set the role for authorization, with fallback
+      id: user._id.toString(),
+      email: user.email,
+      gymName: userRole === 'trainer' ? user.name : user.gymName,
+      role: userRole
     };
     
     // Create JWT token
     const token = createToken(tokenPayload);
 
     // Remove sensitive data from response
-    const gymData = gym.toObject();
-    delete gymData.password;
+    const userData = user.toObject();
+    delete userData.password;
 
     // Create response
     const response = NextResponse.json(
       { 
         message: 'Login successful', 
-        gym: gymData,
-        role: 'gym-owner'
+        user: userData,
+        role: userRole
       },
       { status: 200 }
     );

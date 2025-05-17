@@ -20,6 +20,7 @@ export default function Login() {
     email: "",
     password: "",
   });
+  const [selectedRole, setSelectedRole] = useState('gym-owner');
   
   // Get the callback URL if one was provided
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
@@ -83,7 +84,7 @@ export default function Login() {
     setAccountStatus(null);
     
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(formData.email, formData.password, selectedRole);
       
       if (!result.success) {
         throw new Error(result.error instanceof Error ? result.error.message : 'Login failed');
@@ -174,6 +175,7 @@ export default function Login() {
                     email: "super@admin.com",
                     password: "Admin@2025"
                   });
+                  setSelectedRole('super-admin');
                 }}
               >
                 Admin access
@@ -276,6 +278,25 @@ export default function Login() {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   />
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  I am a
+                </label>
+                <div className="mt-1">
+                  <select
+                    id="role"
+                    name="role"
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm"
+                  >
+                    <option value="gym-owner">Gym Owner</option>
+                    <option value="trainer">Trainer</option>
+                    <option value="member">Member</option>
+                  </select>
                 </div>
               </div>
 

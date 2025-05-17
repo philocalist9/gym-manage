@@ -1,63 +1,76 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Plus, Search, Filter, MoreVertical, ChevronDown } from "lucide-react";
 import AddTrainerModal from "./components/add-trainer-modal";
 import TrainerDetailsModal from "./components/trainer-details-modal";
 
 interface Trainer {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   specialization: string;
-  status: "Available" | "In Session" | "Off Duty";
+  bio: string;
+  experience: number;
   totalClients: number;
   rating: number;
   joinDate: string;
+  phone?: string;
 }
 
 export default function TrainersPage() {
-  const [trainers, setTrainers] = useState<Trainer[]>([
-    {
-      id: "1",
-      name: "John Smith",
-      email: "john.smith@gymsync.com",
-      specialization: "Weight Training",
-      status: "Available",
-      totalClients: 15,
-      rating: 4.8,
-      joinDate: "2025-01-15",
-    },
-    {
-      id: "2",
-      name: "Sarah Johnson",
-      email: "sarah.j@gymsync.com",
-      specialization: "Yoga",
-      status: "In Session",
-      totalClients: 20,
-      rating: 4.9,
-      joinDate: "2024-11-20",
-    },
-    {
-      id: "3",
-      name: "Mike Wilson",
-      email: "mike.w@gymsync.com",
-      specialization: "CrossFit",
-      status: "Off Duty",
-      totalClients: 12,
-      rating: 4.7,
-      joinDate: "2025-02-01",
-    },
-  ]);
+  const [trainers, setTrainers] = useState<Trainer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // States for modals and filters
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedTrainer, setSelectedTrainer] = useState<Trainer | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
 
-  // Filter trainers based on search and status
+  // Fetch trainers from the API
+  useEffect(() => {
+    const fetchTrainers = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/trainers');
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch trainers');
+        }
+        
+        const data = await response.json();
+        
+        // Format trainer data from API response
+        const formattedTrainers = data.trainers.map((trainer: any) => ({
+          _id: trainer._id,
+          name: trainer.name,
+          email: trainer.email,
+          specialization: trainer.specialization,
+          bio: trainer.bio || "",
+          experience: trainer.experience || 0,
+          phone: trainer.phone,
+          totalClients: trainer.totalClients || 0,
+          rating: trainer.rating || 5.0,
+          joinDate: new Date(trainer.joinDate || trainer.createdAt).toISOString().split('T')[0],
+        }));
+        
+        setTrainers(formattedTrainers);
+        setError(null);
+      } catch (err: any) {
+        setError(err.message || 'An error occurred while fetching trainers');
+        console.error('Error fetching trainers:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTrainers();
+  }, []);
+
+  // Filter trainers based on search
   const filteredTrainers = useMemo(() => {
     return trainers.filter((trainer) => {
       const matchesSearch = 
@@ -65,26 +78,73 @@ export default function TrainersPage() {
         trainer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
         trainer.specialization.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesStatus = 
-        statusFilter === "all" || trainer.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
+      return matchesSearch;
     });
-  }, [trainers, searchQuery, statusFilter]);
+  }, [trainers, searchQuery]);
 
   // Handlers
-  const handleAddTrainer = (newTrainer: Omit<Trainer, "id">) => {
-    const id = (trainers.length + 1).toString();
-    setTrainers([...trainers, { ...newTrainer, id }]);
+  const handleAddTrainer = async (newTrainer: Omit<Trainer, "_id">) => {
+    try {
+      setIsLoading(true);
+      
+      const response = await fetch('/api/trainers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTrainer),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add trainer');
+      }
+
+      const data = await response.json();
+      
+      // Add the new trainer to the state
+      setTrainers([...trainers, {
+        ...data.trainer,
+        joinDate: new Date(data.trainer.joinDate).toISOString().split('T')[0],
+      }]);
+      
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while adding the trainer');
+      console.error('Error adding trainer:', err);
+    } finally {
+      setIsLoading(false);
+      setIsAddModalOpen(false);
+    }
   };
 
   const handleActionClick = (trainerId: string) => {
     setActiveActionMenu(activeActionMenu === trainerId ? null : trainerId);
   };
 
-  const handleDeleteTrainer = (id: string) => {
-    setTrainers(trainers.filter(t => t.id !== id));
-    setActiveActionMenu(null);
+  const handleDeleteTrainer = async (id: string) => {
+    try {
+      setIsLoading(true);
+      
+      const response = await fetch(`/api/trainers/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete trainer');
+      }
+      
+      // Update UI after successful deletion
+      setTrainers(trainers.filter(t => t._id !== id));
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while deleting the trainer');
+      console.error('Error deleting trainer:', err);
+    } finally {
+      setIsLoading(false);
+      setActiveActionMenu(null);
+    }
   };
 
   return (
@@ -101,10 +161,17 @@ export default function TrainersPage() {
         </button>
       </div>
 
-      {/* Search and Filter */}
-      <div className="flex gap-4 mb-6">
-        <div className="flex-1 max-w-md relative">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      {/* Error message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500 rounded-lg text-red-500">
+          {error}
+        </div>
+      )}
+
+      {/* Filter and Search */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
             placeholder="Search trainers..."
@@ -113,143 +180,94 @@ export default function TrainersPage() {
             className="w-full pl-10 pr-4 py-2 bg-[#151C2C] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-400 focus:outline-none focus:border-blue-500"
           />
         </div>
-        <div className="relative">
-          <button 
-            onClick={() => setStatusFilter(statusFilter === "all" ? "Available" : "all")}
-            className="flex items-center gap-2 px-4 py-2 bg-[#151C2C] text-gray-200 rounded-lg hover:bg-[#1A2234] transition-colors border border-gray-800"
-          >
-            <Filter className="w-5 h-5" />
-            <span>Status: {statusFilter === "all" ? "All" : statusFilter}</span>
-            <ChevronDown className="w-4 h-4 ml-2" />
-          </button>
-          {statusFilter !== "all" && (
-            <div className="absolute right-0 mt-2 w-48 py-2 bg-[#151C2C] rounded-lg shadow-xl border border-gray-800">
-              <button
-                onClick={() => setStatusFilter("all")}
-                className="w-full px-4 py-2 text-left text-gray-200 hover:bg-[#1A2234]"
-              >
-                All
-              </button>
-              <button
-                onClick={() => setStatusFilter("Available")}
-                className="w-full px-4 py-2 text-left text-gray-200 hover:bg-[#1A2234]"
-              >
-                Available
-              </button>
-              <button
-                onClick={() => setStatusFilter("In Session")}
-                className="w-full px-4 py-2 text-left text-gray-200 hover:bg-[#1A2234]"
-              >
-                In Session
-              </button>
-              <button
-                onClick={() => setStatusFilter("Off Duty")}
-                className="w-full px-4 py-2 text-left text-gray-200 hover:bg-[#1A2234]"
-              >
-                Off Duty
-              </button>
-            </div>
-          )}
+        
+        {/* Status filter removed */}
+      </div>
+
+      {/* Loading state */}
+      {isLoading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
-      </div>
-
-      {/* Trainers Table */}
-      <div className="bg-[#151C2C] rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-[#1A2234] text-gray-400 text-sm">
-            <tr>
-              <th className="text-left py-4 px-6 font-medium">Name</th>
-              <th className="text-left py-4 px-6 font-medium">Specialization</th>
-              <th className="text-left py-4 px-6 font-medium">Status</th>
-              <th className="text-left py-4 px-6 font-medium">Total Clients</th>
-              <th className="text-left py-4 px-6 font-medium">Rating</th>
-              <th className="text-left py-4 px-6 font-medium">Join Date</th>
-              <th className="text-left py-4 px-6 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-800">
-            {filteredTrainers.map((trainer) => (
-              <tr key={trainer.id} className="hover:bg-[#1A2234] transition-colors">
-                <td className="py-4 px-6">
-                  <div className="flex items-center gap-3">
-                    <div 
-                      onClick={() => setSelectedTrainer(trainer)}
-                      className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium cursor-pointer"
-                    >
-                      {trainer.name.split(" ").map(n => n[0]).join("")}
-                    </div>
-                    <div>
-                      <p className="text-white font-medium">{trainer.name}</p>
-                      <p className="text-sm text-gray-400">{trainer.email}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="py-4 px-6 text-gray-200">{trainer.specialization}</td>
-                <td className="py-4 px-6">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium
-                    ${trainer.status === "Available" 
-                      ? "bg-green-500/10 text-green-500"
-                      : trainer.status === "In Session"
-                      ? "bg-blue-500/10 text-blue-500"
-                      : "bg-yellow-500/10 text-yellow-500"
-                    }`}>
-                    {trainer.status}
-                  </span>
-                </td>
-                <td className="py-4 px-6 text-gray-200">{trainer.totalClients}</td>
-                <td className="py-4 px-6">
-                  <div className="flex items-center gap-1">
-                    <span className="text-yellow-500">★</span>
-                    <span className="text-gray-200">{trainer.rating}</span>
-                  </div>
-                </td>
-                <td className="py-4 px-6 text-gray-200">
-                  {new Date(trainer.joinDate).toLocaleDateString()}
-                </td>
-                <td className="py-4 px-6 relative">
-                  <button 
-                    onClick={() => handleActionClick(trainer.id)}
-                    className="p-2 hover:bg-[#212B42] rounded-lg transition-colors"
-                  >
-                    <MoreVertical className="w-5 h-5 text-gray-400" />
-                  </button>
-                  {activeActionMenu === trainer.id && (
-                    <div className="absolute right-0 mt-2 w-48 py-2 bg-[#151C2C] rounded-lg shadow-xl border border-gray-800">
-                      <button
-                        onClick={() => {
-                          setSelectedTrainer(trainer);
-                          setActiveActionMenu(null);
-                        }}
-                        className="w-full px-4 py-2 text-left text-gray-200 hover:bg-[#1A2234]"
-                      >
-                        View Details
-                      </button>
-                      <button
-                        onClick={() => handleDeleteTrainer(trainer.id)}
-                        className="w-full px-4 py-2 text-left text-red-500 hover:bg-[#1A2234]"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </td>
+      ) : filteredTrainers.length === 0 ? (
+        <div className="text-center py-20 text-gray-400">
+          {trainers.length === 0 ? "No trainers found. Add your first trainer!" : "No trainers match your filters."}
+        </div>
+      ) : (
+        // Trainers Table
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-gray-800">
+                <th className="pb-4 text-left text-gray-400 font-medium">Name</th>
+                <th className="pb-4 text-left text-gray-400 font-medium">Email</th>
+                <th className="pb-4 text-left text-gray-400 font-medium">Specialization</th>
+                <th className="pb-4 text-left text-gray-400 font-medium">Clients</th>
+                <th className="pb-4 text-left text-gray-400 font-medium">Rating</th>
+                <th className="pb-4 text-left text-gray-400 font-medium">Join Date</th>
+                <th className="pb-4 text-right text-gray-400 font-medium">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Modals */}
+            </thead>
+            <tbody>
+              {filteredTrainers.map((trainer) => (
+                <tr 
+                  key={trainer._id}
+                  className="border-b border-gray-800 hover:bg-[#151C2C]/50 cursor-pointer transition-colors"
+                  onClick={() => setSelectedTrainer(trainer)}
+                >
+                  <td className="py-4 text-white font-medium">{trainer.name}</td>
+                  <td className="py-4 text-gray-300">{trainer.email}</td>
+                  <td className="py-4 text-gray-300">{trainer.specialization}</td>
+                  <td className="py-4 text-gray-300">{trainer.totalClients}</td>
+                  <td className="py-4 text-gray-300">{trainer.rating.toFixed(1)}</td>
+                  <td className="py-4 text-gray-300">{trainer.joinDate}</td>
+                  <td className="py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
+                    <button 
+                      onClick={() => handleActionClick(trainer._id)}
+                      className="p-2 hover:bg-[#1A2234] rounded-lg transition-colors"
+                    >
+                      <MoreVertical className="w-5 h-5 text-gray-400" />
+                    </button>
+                    
+                    {activeActionMenu === trainer._id && (
+                      <div className="absolute top-full mt-1 right-0 w-48 bg-[#1A2234] rounded-lg border border-gray-800 shadow-xl overflow-hidden z-10">
+                        <button 
+                          onClick={() => setSelectedTrainer(trainer)}
+                          className="px-4 py-2 w-full text-left hover:bg-[#232B3E] transition-colors text-gray-300"
+                        >
+                          View Details
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteTrainer(trainer._id)}
+                          className="px-4 py-2 w-full text-left hover:bg-[#232B3E] transition-colors text-red-500"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      
+      {/* Add Trainer Modal */}
       <AddTrainerModal 
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddTrainer}
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        onAdd={handleAddTrainer} 
       />
-      <TrainerDetailsModal 
-        isOpen={selectedTrainer !== null}
-        onClose={() => setSelectedTrainer(null)}
-        trainer={selectedTrainer}
-      />
+      
+      {/* Trainer Details Modal */}
+      {selectedTrainer && (
+        <TrainerDetailsModal 
+          isOpen={!!selectedTrainer}
+          trainer={selectedTrainer}
+          onClose={() => setSelectedTrainer(null)}
+        />
+      )}
     </div>
   );
 }

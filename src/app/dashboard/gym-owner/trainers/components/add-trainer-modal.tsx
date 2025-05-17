@@ -6,16 +6,18 @@ import { X } from "lucide-react";
 interface AddTrainerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (trainer: Omit<Trainer, "id">) => void;
+  onAdd: (trainer: Omit<Trainer, "_id">) => void;
 }
 
 interface Trainer {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   password: string;
   specialization: string;
-  status: "Available" | "In Session" | "Off Duty";
+  phone?: string;
+  bio: string;
+  experience: number;
   totalClients: number;
   rating: number;
   joinDate: string;
@@ -27,13 +29,16 @@ export default function AddTrainerModal({ isOpen, onClose, onAdd }: AddTrainerMo
     email: "",
     password: "",
     specialization: "",
-    status: "Available" as const,
+    phone: "",
+    bio: "",
+    experience: 0,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onAdd({
       ...formData,
+      experience: Number(formData.experience), // Ensure experience is a number
       totalClients: 0,
       rating: 5.0,
       joinDate: new Date().toISOString().split("T")[0],
@@ -85,6 +90,19 @@ export default function AddTrainerModal({ isOpen, onClose, onAdd }: AddTrainerMo
           </div>
 
           <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-400 mb-1">
+              Phone (Optional)
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-400 mb-1">
               Password
             </label>
@@ -113,20 +131,36 @@ export default function AddTrainerModal({ isOpen, onClose, onAdd }: AddTrainerMo
           </div>
 
           <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-400 mb-1">
-              Status
+            <label htmlFor="bio" className="block text-sm font-medium text-gray-400 mb-1">
+              Bio
             </label>
-            <select
-              id="status"
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-              className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 focus:outline-none focus:border-blue-500"
-            >
-              <option value="Available">Available</option>
-              <option value="In Session">In Session</option>
-              <option value="Off Duty">Off Duty</option>
-            </select>
+            <textarea
+              id="bio"
+              required
+              value={formData.bio}
+              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+              className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              rows={3}
+              placeholder="Brief professional description of the trainer"
+            />
           </div>
+
+          <div>
+            <label htmlFor="experience" className="block text-sm font-medium text-gray-400 mb-1">
+              Experience (years)
+            </label>
+            <input
+              type="number"
+              id="experience"
+              required
+              min="0"
+              value={formData.experience}
+              onChange={(e) => setFormData({ ...formData, experience: parseInt(e.target.value) || 0 })}
+              className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          {/* Status field removed */}
 
           <div className="flex justify-end gap-4 mt-6">
             <button

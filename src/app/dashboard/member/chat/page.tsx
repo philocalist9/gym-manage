@@ -161,9 +161,7 @@ export default function MemberChatPage() {
                   <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
                     {trainer.name.split(" ").map(n => n[0]).join("")}
                   </div>
-                  <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#151C2C] ${
-                    trainer.status === "online" ? "bg-green-500" : "bg-gray-500"
-                  }`} />
+                  <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#151C2C] bg-green-500" />
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between items-start">
@@ -200,14 +198,12 @@ export default function MemberChatPage() {
                   <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
                     {selectedTrainer.name.split(" ").map(n => n[0]).join("")}
                   </div>
-                  <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#151C2C] ${
-                    selectedTrainer.status === "online" ? "bg-green-500" : "bg-gray-500"
-                  }`} />
+                  <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#151C2C] bg-green-500" />
                 </div>
                 <div>
                   <h2 className="text-white font-medium">{selectedTrainer.name}</h2>
                   <p className="text-sm text-gray-400">
-                    {selectedTrainer.status === "online" ? "Online" : "Offline"}
+                    Online
                   </p>
                 </div>
               </div>

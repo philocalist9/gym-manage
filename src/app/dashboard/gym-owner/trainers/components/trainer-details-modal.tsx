@@ -10,14 +10,16 @@ interface TrainerDetailsModalProps {
 }
 
 interface Trainer {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   specialization: string;
-  status: "Available" | "In Session" | "Off Duty";
+  bio: string;
+  experience: number;
   totalClients: number;
   rating: number;
   joinDate: string;
+  phone?: string;
 }
 
 export default function TrainerDetailsModal({ isOpen, onClose, trainer }: TrainerDetailsModalProps) {
@@ -50,17 +52,15 @@ export default function TrainerDetailsModal({ isOpen, onClose, trainer }: Traine
               <p className="text-gray-200 font-medium">{trainer.specialization}</p>
             </div>
             <div className="bg-[#1A2234] p-4 rounded-lg">
-              <p className="text-sm text-gray-400 mb-1">Status</p>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium
-                ${trainer.status === "Available" 
-                  ? "bg-green-500/10 text-green-500"
-                  : trainer.status === "In Session"
-                  ? "bg-blue-500/10 text-blue-500"
-                  : "bg-yellow-500/10 text-yellow-500"
-                }`}>
-                {trainer.status}
-              </span>
+              <p className="text-sm text-gray-400 mb-1">Experience</p>
+              <p className="text-gray-200 font-medium">{trainer.experience} {trainer.experience === 1 ? 'year' : 'years'}</p>
             </div>
+            {trainer.phone && (
+              <div className="bg-[#1A2234] p-4 rounded-lg">
+                <p className="text-sm text-gray-400 mb-1">Phone</p>
+                <p className="text-gray-200 font-medium">{trainer.phone}</p>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-4">
@@ -80,6 +80,13 @@ export default function TrainerDetailsModal({ isOpen, onClose, trainer }: Traine
               <p className="text-gray-200 font-medium">
                 {new Date(trainer.joinDate).toLocaleDateString()}
               </p>
+            </div>
+          </div>
+          
+          <div className="mt-4">
+            <div className="bg-[#1A2234] p-4 rounded-lg">
+              <p className="text-sm text-gray-400 mb-1">Biography</p>
+              <p className="text-gray-200">{trainer.bio}</p>
             </div>
           </div>
         </div>
