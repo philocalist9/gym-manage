@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Calendar, AlertTriangle, Clock } from "lucide-react";
+import { 
+  formatDate as formatDateUtil, 
+  isPaymentDueSoon, 
+  isPastDuePayment,
+  getPaymentStatus,
+  getDaysUntil
+} from "@/app/utils/date-utils";
 
 // Helper function for consistent date formatting
 const formatDate = (dateString: string) => {
@@ -124,9 +131,56 @@ export default function MemberDetailsModal({ isOpen, onClose, member }: MemberDe
             </div>
             <div className="bg-[#1A2234] p-4 rounded-lg">
               <p className="text-sm text-gray-400 mb-1">Next Payment</p>
-              <p className="text-gray-200 font-medium">
-                {formatDate(member.nextPayment)}
-              </p>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-gray-200 font-medium">
+                    {formatDate(member.nextPayment)}
+                  </p>
+                  {(() => {
+                    const paymentStatus = getPaymentStatus(member.nextPayment);
+                    
+                    if (paymentStatus.status === 'overdue') {
+                      return (
+                        <span className="flex items-center gap-1 px-2 py-1 text-xs bg-red-500/10 text-red-500 rounded-full">
+                          <AlertTriangle className="w-3 h-3" />
+                          <span>
+                            {paymentStatus.daysOverdue === 1 ? '1 day overdue' : `${paymentStatus.daysOverdue} days overdue`}
+                          </span>
+                        </span>
+                      );
+                    }
+                    
+                    if (paymentStatus.status === 'due-soon') {
+                      return (
+                        <span className="flex items-center gap-1 px-2 py-1 text-xs bg-yellow-500/10 text-yellow-500 rounded-full">
+                          <Clock className="w-3 h-3" />
+                          <span>
+                            {paymentStatus.daysUntil === 0 ? 'Due today' : 
+                            paymentStatus.daysUntil === 1 ? 'Due tomorrow' : 
+                            `Due in ${paymentStatus.daysUntil} days`}
+                          </span>
+                        </span>
+                      );
+                    }
+                    
+                    return (
+                      <span className="flex items-center gap-1 px-2 py-1 text-xs bg-green-500/10 text-green-500 rounded-full">
+                        <Calendar className="w-3 h-3" />
+                        <span>
+                          {paymentStatus.daysUntil && `In ${paymentStatus.daysUntil} days`}
+                        </span>
+                      </span>
+                    );
+                  })()}
+                </div>
+                
+                {/* Add a reminder action button for payments due soon or overdue */}
+                {(isPaymentDueSoon(member.nextPayment) || isPastDuePayment(member.nextPayment)) && (
+                  <button className="mt-2 text-xs text-blue-500 hover:text-blue-400 text-left">
+                    Send payment reminder
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 

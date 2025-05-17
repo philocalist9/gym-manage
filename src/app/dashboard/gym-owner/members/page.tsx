@@ -1,9 +1,16 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Plus, Search, Filter, MoreVertical, Loader } from "lucide-react";
+import { Plus, Search, Filter, MoreVertical, Loader, Clock, AlertTriangle, Calendar } from "lucide-react";
 import AddMemberModal from "./components/add-member-modal";
 import MemberDetailsModal from "./components/member-details-modal";
+import { 
+  formatDate as formatDateUtil, 
+  isPaymentDueSoon, 
+  isPastDuePayment,
+  getPaymentStatus,
+  getDaysUntil
+} from "@/app/utils/date-utils";
 
 // Helper function for consistent date formatting
 const formatDate = (dateString: string) => {
@@ -40,7 +47,10 @@ export default function MembersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [membershipFilter, setMembershipFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState("all"); // New payment filter
   const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<string>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Fetch members from the API
   useEffect(() => {
@@ -108,9 +118,44 @@ export default function MembersPage() {
       // Membership filter
       const matchesMembership = membershipFilter === "all" || member.membershipType === membershipFilter;
       
-      return matchesSearch && matchesStatus && matchesMembership;
+      // Payment status filter
+      let matchesPayment = true;
+      if (paymentFilter !== "all") {
+        if (paymentFilter === "overdue") {
+          matchesPayment = isPastDuePayment(member.nextPayment);
+        } else if (paymentFilter === "due-soon") {
+          matchesPayment = isPaymentDueSoon(member.nextPayment);
+        } else if (paymentFilter === "upcoming") {
+          // Not overdue and not due soon = upcoming
+          matchesPayment = !isPastDuePayment(member.nextPayment) && !isPaymentDueSoon(member.nextPayment);
+        }
+      }
+      
+      return matchesSearch && matchesStatus && matchesMembership && matchesPayment;
+    })
+    // Sort the filtered results
+    .sort((a, b) => {
+      if (sortField === "name") {
+        return sortDirection === "asc" 
+          ? a.name.localeCompare(b.name) 
+          : b.name.localeCompare(a.name);
+      } 
+      
+      if (sortField === "joiningDate") {
+        const dateA = new Date(a.joiningDate).getTime();
+        const dateB = new Date(b.joiningDate).getTime();
+        return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
+      }
+      
+      if (sortField === "nextPayment") {
+        const dateA = new Date(a.nextPayment).getTime();
+        const dateB = new Date(b.nextPayment).getTime();
+        return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
+      }
+      
+      return 0;
     });
-  }, [members, searchQuery, statusFilter, membershipFilter]);
+  }, [members, searchQuery, statusFilter, membershipFilter, paymentFilter, sortField, sortDirection]);
 
   // Handlers
   const handleAddMember = async (newMember: Omit<Member, "_id">) => {
@@ -218,6 +263,54 @@ export default function MembersPage() {
         </button>
       </div>
 
+      {/* Payment Summary Cards */}
+      {!isLoading && members.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-[#151C2C] border border-yellow-500/20 rounded-lg p-4 flex items-center">
+            <div className="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center text-yellow-500 mr-3">
+              <Clock className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">Payments Due Soon</p>
+              <p className="text-white text-lg font-semibold">
+                {members.filter(m => isPaymentDueSoon(m.nextPayment)).length}
+              </p>
+              <p className="text-xs text-gray-500">Next 7 days</p>
+            </div>
+          </div>
+          
+          <div className="bg-[#151C2C] border border-red-500/20 rounded-lg p-4 flex items-center">
+            <div className="w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center text-red-500 mr-3">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">Overdue Payments</p>
+              <p className="text-white text-lg font-semibold">
+                {members.filter(m => isPastDuePayment(m.nextPayment)).length}
+              </p>
+              <p className="text-xs text-gray-500">
+                Needs immediate attention
+              </p>
+            </div>
+          </div>
+          
+          <div className="bg-[#151C2C] border border-green-500/20 rounded-lg p-4 flex items-center">
+            <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 mr-3">
+              <Calendar className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">Up-to-date Members</p>
+              <p className="text-white text-lg font-semibold">
+                {members.filter(m => !isPaymentDueSoon(m.nextPayment) && !isPastDuePayment(m.nextPayment)).length}
+              </p>
+              <p className="text-xs text-gray-500">
+                More than 7 days until payment
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Error message */}
       {error && (
         <div className="mb-6 p-4 bg-red-500/10 border border-red-500 rounded-lg text-red-500">
@@ -267,6 +360,20 @@ export default function MembersPage() {
               <option value="VIP">VIP</option>
             </select>
           </div>
+
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <select
+              value={paymentFilter}
+              onChange={(e) => setPaymentFilter(e.target.value)}
+              className="pl-10 pr-4 py-2 bg-[#151C2C] border border-gray-800 rounded-lg text-gray-200 appearance-none focus:outline-none focus:border-blue-500"
+            >
+              <option value="all">All Payments</option>
+              <option value="overdue">Overdue</option>
+              <option value="due-soon">Due Soon</option>
+              <option value="upcoming">Upcoming</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -288,13 +395,49 @@ export default function MembersPage() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-gray-800">
-                <th className="pb-4 text-left text-gray-400 font-medium">Name</th>
+                <th 
+                  className="pb-4 text-left text-gray-400 font-medium cursor-pointer hover:text-white"
+                  onClick={() => {
+                    if (sortField === "name") {
+                      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+                    } else {
+                      setSortField("name");
+                      setSortDirection("asc");
+                    }
+                  }}
+                >
+                  Name {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
                 <th className="pb-4 text-left text-gray-400 font-medium">Member #</th>
                 <th className="pb-4 text-left text-gray-400 font-medium">Email</th>
                 <th className="pb-4 text-left text-gray-400 font-medium">Membership</th>
                 <th className="pb-4 text-left text-gray-400 font-medium">Status</th>
-                <th className="pb-4 text-left text-gray-400 font-medium">Join Date</th>
-                <th className="pb-4 text-left text-gray-400 font-medium">Next Payment</th>
+                <th 
+                  className="pb-4 text-left text-gray-400 font-medium cursor-pointer hover:text-white"
+                  onClick={() => {
+                    if (sortField === "joiningDate") {
+                      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+                    } else {
+                      setSortField("joiningDate");
+                      setSortDirection("asc");
+                    }
+                  }}
+                >
+                  Join Date {sortField === "joiningDate" && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th 
+                  className="pb-4 text-left text-gray-400 font-medium cursor-pointer hover:text-white"
+                  onClick={() => {
+                    if (sortField === "nextPayment") {
+                      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+                    } else {
+                      setSortField("nextPayment");
+                      setSortDirection("asc");
+                    }
+                  }}
+                >
+                  Next Payment {sortField === "nextPayment" && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
                 <th className="pb-4 text-left text-gray-400 font-medium">Trainer</th>
                 <th className="pb-4 text-right text-gray-400 font-medium">Actions</th>
               </tr>
@@ -320,7 +463,52 @@ export default function MembersPage() {
                     </span>
                   </td>
                   <td className="py-4 text-gray-300">{formatDate(member.joiningDate)}</td>
-                  <td className="py-4 text-gray-300">{formatDate(member.nextPayment)}</td>
+                  <td className="py-4">
+                    {(() => {
+                      const paymentStatus = getPaymentStatus(member.nextPayment);
+                      
+                      if (paymentStatus.status === 'overdue') {
+                        return (
+                          <div className="flex items-center gap-1">
+                            <span className="text-gray-300">{formatDate(member.nextPayment)}</span>
+                            <div className="flex items-center">
+                              <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                              <span className="ml-1 text-xs text-red-500">
+                                {paymentStatus.daysOverdue === 1 ? '1 day' : `${paymentStatus.daysOverdue} days`} overdue
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      if (paymentStatus.status === 'due-soon') {
+                        return (
+                          <div className="flex items-center gap-1">
+                            <span className="text-gray-300">{formatDate(member.nextPayment)}</span>
+                            <div className="flex items-center">
+                              <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                              <span className="ml-1 text-xs text-yellow-500">
+                                {paymentStatus.daysUntil === 0 ? 'Today' : 
+                                 paymentStatus.daysUntil === 1 ? 'Tomorrow' :
+                                 `${paymentStatus.daysUntil} days`}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-300">{formatDate(member.nextPayment)}</span>
+                          {paymentStatus.daysUntil !== undefined && paymentStatus.daysUntil <= 14 && (
+                            <span className="ml-1 text-xs text-gray-500">
+                              in {paymentStatus.daysUntil} days
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td className="py-4 text-gray-300">
                     {member.trainer && trainerNames[member.trainer] ? 
                       trainerNames[member.trainer] : 'No Trainer'}
