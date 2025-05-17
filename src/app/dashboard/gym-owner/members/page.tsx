@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { Plus, Search, Filter, MoreVertical, ChevronDown } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Plus, Search, Filter, MoreVertical, Loader } from "lucide-react";
 import AddMemberModal from "./components/add-member-modal";
 import MemberDetailsModal from "./components/member-details-modal";
 
@@ -16,93 +16,192 @@ const formatDate = (dateString: string) => {
 };
 
 interface Member {
-  id: string;
+  _id: string;
   name: string;
   email: string;
+  memberNumber: string;
   membershipType: "Basic" | "Premium" | "VIP";
   status: "Active" | "Inactive" | "Pending";
   joiningDate: string;
   nextPayment: string;
-  trainer: string;
+  trainer: string | null;
   attendance: number;
 }
 
 export default function MembersPage() {
-  const [members, setMembers] = useState<Member[]>([
-    {
-      id: "1",
-      name: "Alex Thompson",
-      email: "alex.t@example.com",
-      membershipType: "Premium",
-      status: "Active",
-      joiningDate: "2025-01-10",
-      nextPayment: "2025-06-10",
-      trainer: "John Smith",
-      attendance: 85,
-    },
-    {
-      id: "2",
-      name: "Emma Wilson",
-      email: "emma.w@example.com",
-      membershipType: "Basic",
-      status: "Active",
-      joiningDate: "2025-02-15",
-      nextPayment: "2025-06-15",
-      trainer: "Sarah Johnson",
-      attendance: 92,
-    },
-    {
-      id: "3",
-      name: "Michael Brown",
-      email: "michael.b@example.com",
-      membershipType: "VIP",
-      status: "Inactive",
-      joiningDate: "2024-12-01",
-      nextPayment: "2025-06-01",
-      trainer: "Mike Wilson",
-      attendance: 65,
-    },
-  ]);
-
-  // States for modals and filters
+  const [members, setMembers] = useState<Member[]>([]);
+  const [trainerNames, setTrainerNames] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Modals and filters state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [membershipFilter, setMembershipFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [membershipFilter, setMembershipFilter] = useState("all");
   const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
 
-  // Filter members based on search, status, and membership type
+  // Fetch members from the API
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const response = await fetch('/api/members');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch members');
+        }
+        
+        const data = await response.json();
+        
+        setMembers(data.members.map((member: any) => ({
+          _id: member._id,
+          name: member.name,
+          email: member.email,
+          memberNumber: member.memberNumber || '000000', // Include member number with fallback
+          membershipType: member.membershipType,
+          status: member.status,
+          joiningDate: new Date(member.joiningDate).toISOString(),
+          nextPayment: new Date(member.nextPayment).toISOString(),
+          trainer: member.trainer,
+          attendance: member.attendance,
+        })));
+        
+        // Also fetch trainers to map trainer IDs to names
+        const trainersResponse = await fetch('/api/trainers');
+        if (trainersResponse.ok) {
+          const trainersData = await trainersResponse.json();
+          const trainerMap: Record<string, string> = {};
+          
+          trainersData.trainers.forEach((trainer: any) => {
+            trainerMap[trainer._id] = trainer.name;
+          });
+          
+          setTrainerNames(trainerMap);
+        }
+      } catch (err: any) {
+        console.error('Error fetching members:', err);
+        setError(err.message || 'An error occurred');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchMembers();
+  }, []);
+
+  // Filtered members based on search and filters
   const filteredMembers = useMemo(() => {
     return members.filter((member) => {
+      // Search filter
       const matchesSearch = 
         member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        member.trainer.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesStatus = 
-        statusFilter === "all" || member.status === statusFilter;
-
-      const matchesMembership =
-        membershipFilter === "all" || member.membershipType === membershipFilter;
-
+        member.memberNumber.includes(searchQuery);
+      
+      // Status filter
+      const matchesStatus = statusFilter === "all" || member.status === statusFilter;
+      
+      // Membership filter
+      const matchesMembership = membershipFilter === "all" || member.membershipType === membershipFilter;
+      
       return matchesSearch && matchesStatus && matchesMembership;
     });
   }, [members, searchQuery, statusFilter, membershipFilter]);
 
   // Handlers
-  const handleAddMember = (newMember: Omit<Member, "id">) => {
-    const id = (members.length + 1).toString();
-    setMembers([...members, { ...newMember, id }]);
+  const handleAddMember = async (newMember: Omit<Member, "_id">) => {
+    try {
+      setIsLoading(true);
+      
+      const response = await fetch('/api/members', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newMember),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add member');
+      }
+
+      const data = await response.json();
+      
+      // Add the new member to the state
+      setMembers([...members, {
+        ...data.member,
+        joiningDate: new Date(data.member.joiningDate).toISOString(),
+        nextPayment: new Date(data.member.nextPayment).toISOString()
+      }]);
+      
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while adding the member');
+      console.error('Error adding member:', err);
+      throw err; // Re-throw to be caught by the modal
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleActionClick = (memberId: string) => {
     setActiveActionMenu(activeActionMenu === memberId ? null : memberId);
   };
 
-  const handleDeleteMember = (id: string) => {
-    setMembers(members.filter(m => m.id !== id));
-    setActiveActionMenu(null);
+  const handleDeleteMember = async (id: string) => {
+    try {
+      setIsLoading(true);
+      
+      const response = await fetch(`/api/members/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete member');
+      }
+      
+      // Update UI after successful deletion
+      setMembers(members.filter(m => m._id !== id));
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while deleting the member');
+      console.error('Error deleting member:', err);
+    } finally {
+      setIsLoading(false);
+      setActiveActionMenu(null);
+    }
+  };
+
+  // Status badge colors
+  const getStatusBadgeClass = (status: Member['status']) => {
+    switch (status) {
+      case "Active":
+        return "bg-green-100 text-green-800";
+      case "Inactive":
+        return "bg-red-100 text-red-800";
+      case "Pending":
+        return "bg-yellow-100 text-yellow-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  // Membership type badge colors
+  const getMembershipBadgeClass = (type: Member['membershipType']) => {
+    switch (type) {
+      case "Premium":
+        return "bg-purple-100 text-purple-800";
+      case "VIP":
+        return "bg-blue-100 text-blue-800";
+      default: // Basic
+        return "bg-gray-100 text-gray-800";
+    }
   };
 
   return (
@@ -119,10 +218,17 @@ export default function MembersPage() {
         </button>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex gap-4 mb-6">
-        <div className="flex-1 max-w-md relative">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      {/* Error message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500 rounded-lg text-red-500">
+          {error}
+        </div>
+      )}
+
+      {/* Filter and Search */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
             placeholder="Search members..."
@@ -131,201 +237,136 @@ export default function MembersPage() {
             className="w-full pl-10 pr-4 py-2 bg-[#151C2C] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-400 focus:outline-none focus:border-blue-500"
           />
         </div>
+        
+        {/* Filters */}
         <div className="flex gap-3">
-          {/* Status Filter */}
           <div className="relative">
-            <button 
-              onClick={() => setStatusFilter(statusFilter === "all" ? "Active" : "all")}
-              className="flex items-center gap-2 px-4 py-2 bg-[#151C2C] text-gray-200 rounded-lg hover:bg-[#1A2234] transition-colors border border-gray-800"
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="pl-10 pr-4 py-2 bg-[#151C2C] border border-gray-800 rounded-lg text-gray-200 appearance-none focus:outline-none focus:border-blue-500"
             >
-              <Filter className="w-5 h-5" />
-              <span>Status: {statusFilter === "all" ? "All" : statusFilter}</span>
-              <ChevronDown className="w-4 h-4 ml-2" />
-            </button>
-            {statusFilter !== "all" && (
-              <div className="absolute right-0 mt-2 w-48 py-2 bg-[#151C2C] rounded-lg shadow-xl border border-gray-800">
-                <button
-                  onClick={() => setStatusFilter("all")}
-                  className="w-full px-4 py-2 text-left text-gray-200 hover:bg-[#1A2234]"
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setStatusFilter("Active")}
-                  className="w-full px-4 py-2 text-left text-gray-200 hover:bg-[#1A2234]"
-                >
-                  Active
-                </button>
-                <button
-                  onClick={() => setStatusFilter("Inactive")}
-                  className="w-full px-4 py-2 text-left text-gray-200 hover:bg-[#1A2234]"
-                >
-                  Inactive
-                </button>
-                <button
-                  onClick={() => setStatusFilter("Pending")}
-                  className="w-full px-4 py-2 text-left text-gray-200 hover:bg-[#1A2234]"
-                >
-                  Pending
-                </button>
-              </div>
-            )}
+              <option value="all">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="Pending">Pending</option>
+            </select>
           </div>
-
-          {/* Membership Filter */}
+          
           <div className="relative">
-            <button 
-              onClick={() => setMembershipFilter(membershipFilter === "all" ? "Basic" : "all")}
-              className="flex items-center gap-2 px-4 py-2 bg-[#151C2C] text-gray-200 rounded-lg hover:bg-[#1A2234] transition-colors border border-gray-800"
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <select
+              value={membershipFilter}
+              onChange={(e) => setMembershipFilter(e.target.value)}
+              className="pl-10 pr-4 py-2 bg-[#151C2C] border border-gray-800 rounded-lg text-gray-200 appearance-none focus:outline-none focus:border-blue-500"
             >
-              <span>Membership: {membershipFilter === "all" ? "All" : membershipFilter}</span>
-              <ChevronDown className="w-4 h-4 ml-2" />
-            </button>
-            {membershipFilter !== "all" && (
-              <div className="absolute right-0 mt-2 w-48 py-2 bg-[#151C2C] rounded-lg shadow-xl border border-gray-800">
-                <button
-                  onClick={() => setMembershipFilter("all")}
-                  className="w-full px-4 py-2 text-left text-gray-200 hover:bg-[#1A2234]"
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setMembershipFilter("Basic")}
-                  className="w-full px-4 py-2 text-left text-gray-200 hover:bg-[#1A2234]"
-                >
-                  Basic
-                </button>
-                <button
-                  onClick={() => setMembershipFilter("Premium")}
-                  className="w-full px-4 py-2 text-left text-gray-200 hover:bg-[#1A2234]"
-                >
-                  Premium
-                </button>
-                <button
-                  onClick={() => setMembershipFilter("VIP")}
-                  className="w-full px-4 py-2 text-left text-gray-200 hover:bg-[#1A2234]"
-                >
-                  VIP
-                </button>
-              </div>
-            )}
+              <option value="all">All Memberships</option>
+              <option value="Basic">Basic</option>
+              <option value="Premium">Premium</option>
+              <option value="VIP">VIP</option>
+            </select>
           </div>
         </div>
       </div>
 
-      {/* Members Table */}
-      <div className="bg-[#151C2C] rounded-xl overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-[#1A2234] text-gray-400 text-sm">
-            <tr>
-              <th className="text-left py-4 px-6 font-medium">Name</th>
-              <th className="text-left py-4 px-6 font-medium">Membership</th>
-              <th className="text-left py-4 px-6 font-medium">Status</th>
-              <th className="text-left py-4 px-6 font-medium">Trainer</th>
-              <th className="text-left py-4 px-6 font-medium">Next Payment</th>
-              <th className="text-left py-4 px-6 font-medium">Attendance</th>
-              <th className="text-left py-4 px-6 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-800">
-            {filteredMembers.map((member) => (
-              <tr key={member.id} className="hover:bg-[#1A2234] transition-colors">
-                <td className="py-4 px-6">
-                  <div className="flex items-center gap-3">
-                    <div 
-                      onClick={() => setSelectedMember(member)}
-                      className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium cursor-pointer"
-                    >
-                      {member.name.split(" ").map(n => n[0]).join("")}
-                    </div>
-                    <div>
-                      <p className="text-white font-medium">{member.name}</p>
-                      <p className="text-sm text-gray-400">{member.email}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="py-4 px-6">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium
-                    ${member.membershipType === "VIP" 
-                      ? "bg-purple-500/10 text-purple-500"
-                      : member.membershipType === "Premium"
-                      ? "bg-blue-500/10 text-blue-500"
-                      : "bg-gray-500/10 text-gray-300"
-                    }`}>
-                    {member.membershipType}
-                  </span>
-                </td>
-                <td className="py-4 px-6">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium
-                    ${member.status === "Active" 
-                      ? "bg-green-500/10 text-green-500"
-                      : member.status === "Inactive"
-                      ? "bg-red-500/10 text-red-500"
-                      : "bg-yellow-500/10 text-yellow-500"
-                    }`}>
-                    {member.status}
-                  </span>
-                </td>
-                <td className="py-4 px-6 text-gray-200">{member.trainer}</td>
-                <td className="py-4 px-6 text-gray-200">
-                  {formatDate(member.nextPayment)}
-                </td>
-                <td className="py-4 px-6">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full ${
-                          member.attendance >= 80 ? "bg-green-500" :
-                          member.attendance >= 60 ? "bg-yellow-500" :
-                          "bg-red-500"
-                        }`}
-                        style={{ width: `${member.attendance}%` }}
-                      />
-                    </div>
-                    <span className="text-sm text-gray-400">{member.attendance}%</span>
-                  </div>
-                </td>
-                <td className="py-4 px-6 relative">
-                  <button 
-                    onClick={() => handleActionClick(member.id)}
-                    className="p-2 hover:bg-[#212B42] rounded-lg transition-colors"
-                  >
-                    <MoreVertical className="w-5 h-5 text-gray-400" />
-                  </button>
-                  {activeActionMenu === member.id && (
-                    <div className="absolute right-0 mt-2 w-48 py-2 bg-[#151C2C] rounded-lg shadow-xl border border-gray-800">
-                      <button
-                        onClick={() => {
-                          setSelectedMember(member);
-                          setActiveActionMenu(null);
-                        }}
-                        className="w-full px-4 py-2 text-left text-gray-200 hover:bg-[#1A2234]"
-                      >
-                        View Details
-                      </button>
-                      <button
-                        onClick={() => handleDeleteMember(member.id)}
-                        className="w-full px-4 py-2 text-left text-red-500 hover:bg-[#1A2234]"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </td>
+      {/* Loading state */}
+      {isLoading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="flex flex-col items-center">
+            <Loader className="w-8 h-8 animate-spin text-blue-500 mb-2" />
+            <p className="text-gray-400">Loading members...</p>
+          </div>
+        </div>
+      ) : filteredMembers.length === 0 ? (
+        <div className="text-center py-20 text-gray-400">
+          {members.length === 0 ? "No members found. Add your first member!" : "No members match your filters."}
+        </div>
+      ) : (
+        // Members Table
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-gray-800">
+                <th className="pb-4 text-left text-gray-400 font-medium">Name</th>
+                <th className="pb-4 text-left text-gray-400 font-medium">Member #</th>
+                <th className="pb-4 text-left text-gray-400 font-medium">Email</th>
+                <th className="pb-4 text-left text-gray-400 font-medium">Membership</th>
+                <th className="pb-4 text-left text-gray-400 font-medium">Status</th>
+                <th className="pb-4 text-left text-gray-400 font-medium">Join Date</th>
+                <th className="pb-4 text-left text-gray-400 font-medium">Next Payment</th>
+                <th className="pb-4 text-left text-gray-400 font-medium">Trainer</th>
+                <th className="pb-4 text-right text-gray-400 font-medium">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Modals */}
+            </thead>
+            <tbody>
+              {filteredMembers.map((member) => (
+                <tr 
+                  key={member._id} 
+                  className="border-b border-gray-800 hover:bg-[#151C2C] cursor-pointer"
+                  onClick={() => setSelectedMember(member)}
+                >
+                  <td className="py-4 text-gray-300">{member.name}</td>
+                  <td className="py-4 text-gray-300 font-mono">{member.memberNumber}</td>
+                  <td className="py-4 text-gray-300">{member.email}</td>
+                  <td className="py-4">
+                    <span className={`px-2 py-1 rounded-full text-xs ${getMembershipBadgeClass(member.membershipType)}`}>
+                      {member.membershipType}
+                    </span>
+                  </td>
+                  <td className="py-4">
+                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeClass(member.status)}`}>
+                      {member.status}
+                    </span>
+                  </td>
+                  <td className="py-4 text-gray-300">{formatDate(member.joiningDate)}</td>
+                  <td className="py-4 text-gray-300">{formatDate(member.nextPayment)}</td>
+                  <td className="py-4 text-gray-300">
+                    {member.trainer && trainerNames[member.trainer] ? 
+                      trainerNames[member.trainer] : 'No Trainer'}
+                  </td>
+                  <td className="py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
+                    <button 
+                      onClick={() => handleActionClick(member._id)}
+                      className="p-2 hover:bg-[#1A2234] rounded-lg transition-colors"
+                    >
+                      <MoreVertical className="w-5 h-5 text-gray-400" />
+                    </button>
+                    
+                    {activeActionMenu === member._id && (
+                      <div className="absolute top-full mt-1 right-0 w-48 bg-[#1A2234] rounded-lg border border-gray-800 shadow-xl overflow-hidden z-10">
+                        <button 
+                          onClick={() => setSelectedMember(member)}
+                          className="px-4 py-2 w-full text-left hover:bg-[#232B3E] transition-colors text-gray-300"
+                        >
+                          View Details
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteMember(member._id)}
+                          className="px-4 py-2 w-full text-left hover:bg-[#232B3E] transition-colors text-red-500"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      
+      {/* Add Member Modal */}
       <AddMemberModal 
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddMember}
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        onAdd={handleAddMember} 
       />
+      
+      {/* Member Details Modal */}
       <MemberDetailsModal 
-        isOpen={selectedMember !== null}
+        isOpen={!!selectedMember}
         onClose={() => setSelectedMember(null)}
         member={selectedMember}
       />

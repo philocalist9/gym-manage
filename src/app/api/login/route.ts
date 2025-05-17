@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import connectDB from '@/app/lib/mongodb';
 import Gym from '@/app/models/Gym';
 import Trainer from '@/app/models/Trainer';
+import Member from '@/app/models/Member';
 import { createToken, setAuthCookie, isSuperAdminCredentials, getSuperAdminPayload } from '@/app/utils/auth';
 
 export async function POST(req: NextRequest) {
@@ -54,10 +55,13 @@ export async function POST(req: NextRequest) {
     let user;
     let userRole;
 
-    // Check if login is for a trainer
+    // Check role for different user types
     if (role === 'trainer') {
       user = await Trainer.findOne({ email });
       userRole = 'trainer';
+    } else if (role === 'member') {
+      user = await Member.findOne({ email });
+      userRole = 'member';
     } else {
       // Default to gym owner
       user = await Gym.findOne({ email });
@@ -91,13 +95,27 @@ export async function POST(req: NextRequest) {
         { status: 403 }
       );
     }
+    
+    // For members, check status - only allow active members to log in
+    if (userRole === 'member' && user.status !== 'Active') {
+      const statusMessage = user.status === 'Pending' 
+        ? 'Your account is pending activation by the gym owner.' 
+        : 'Your account has been deactivated. Please contact your gym.';
+      
+      return NextResponse.json(
+        { error: statusMessage, accountStatus: user.status },
+        { status: 403 }
+      );
+    }
 
     // Create payload for token
     const tokenPayload = { 
       id: user._id.toString(),
       email: user.email,
-      gymName: userRole === 'trainer' ? user.name : user.gymName,
-      role: userRole
+      gymName: userRole === 'trainer' || userRole === 'member' ? user.name : user.gymName,
+      role: userRole,
+      // Include gymId for members for access control
+      ...(userRole === 'member' && { gymId: user.gymId.toString() })
     };
     
     // Create JWT token

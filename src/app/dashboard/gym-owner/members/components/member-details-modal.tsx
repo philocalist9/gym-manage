@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 
 // Helper function for consistent date formatting
@@ -19,19 +19,55 @@ interface MemberDetailsModalProps {
   member: Member | null;
 }
 
+interface TrainerInfo {
+  [key: string]: string;
+}
+
 interface Member {
-  id: string;
+  _id: string;
   name: string;
   email: string;
+  memberNumber: string;
   membershipType: "Basic" | "Premium" | "VIP";
   status: "Active" | "Inactive" | "Pending";
   joiningDate: string;
   nextPayment: string;
-  trainer: string;
+  trainer: string | null;
   attendance: number;
 }
 
 export default function MemberDetailsModal({ isOpen, onClose, member }: MemberDetailsModalProps) {
+  const [trainerNames, setTrainerNames] = useState<TrainerInfo>({});
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Fetch trainer names when modal opens
+  useEffect(() => {
+    if (isOpen && member && member.trainer) {
+      const fetchTrainerInfo = async () => {
+        try {
+          setIsLoading(true);
+          const response = await fetch('/api/trainers');
+          if (response.ok) {
+            const data = await response.json();
+            const nameMap: TrainerInfo = {};
+            
+            data.trainers.forEach((trainer: any) => {
+              nameMap[trainer._id] = trainer.name;
+            });
+            
+            setTrainerNames(nameMap);
+          }
+        } catch (error) {
+          console.error('Error fetching trainer info:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      fetchTrainerInfo();
+    }
+  }, [isOpen, member]);
+  
   if (!isOpen || !member) return null;
 
   return (
@@ -55,6 +91,11 @@ export default function MemberDetailsModal({ isOpen, onClose, member }: MemberDe
         </div>
 
         <div className="space-y-4">
+          <div className="bg-[#1A2234] p-4 rounded-lg mb-4">
+            <p className="text-sm text-gray-400 mb-1">Member Number</p>
+            <p className="text-gray-200 font-medium">{member.memberNumber}</p>
+          </div>
+          
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-[#1A2234] p-4 rounded-lg">
               <p className="text-sm text-gray-400 mb-1">Membership Type</p>
@@ -92,7 +133,11 @@ export default function MemberDetailsModal({ isOpen, onClose, member }: MemberDe
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-[#1A2234] p-4 rounded-lg">
               <p className="text-sm text-gray-400 mb-1">Assigned Trainer</p>
-              <p className="text-gray-200 font-medium">{member.trainer}</p>
+              <p className="text-gray-200 font-medium">
+                {member.trainer 
+                  ? (trainerNames[member.trainer] || "Loading...") 
+                  : "No Trainer"}
+              </p>
             </div>
             <div className="bg-[#1A2234] p-4 rounded-lg">
               <p className="text-sm text-gray-400 mb-1">Attendance Rate</p>

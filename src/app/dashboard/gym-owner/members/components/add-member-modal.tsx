@@ -1,19 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
-import { X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, Loader } from "lucide-react";
 
 interface AddMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (member: Omit<Member, "id">) => void;
+  onAdd: (member: Omit<Member, "_id">) => Promise<void>;
 }
 
 interface Member {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   password: string;
+  memberNumber: string; // Add this field
   membershipType: "Basic" | "Premium" | "VIP";
   status: "Active" | "Inactive" | "Pending";
   joiningDate: string;
@@ -22,37 +23,74 @@ interface Member {
   attendance: number;
 }
 
+interface Trainer {
+  _id: string;
+  name: string;
+}
+
 export default function AddMemberModal({ isOpen, onClose, onAdd }: AddMemberModalProps) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
-    membershipType: "Basic",
+    membershipType: "Basic" as "Basic" | "Premium" | "VIP",
     trainer: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [trainers, setTrainers] = useState<Trainer[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Fetch trainers for the dropdown
+  useEffect(() => {
+    const fetchTrainers = async () => {
+      try {
+        const response = await fetch('/api/trainers');
+        if (!response.ok) throw new Error('Failed to fetch trainers');
+        
+        const data = await response.json();
+        setTrainers(data.trainers || []);
+      } catch (err) {
+        console.error('Error fetching trainers:', err);
+      }
+    };
+    
+    if (isOpen) {
+      fetchTrainers();
+    }
+  }, [isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
+    
     const currentDate = new Date();
     const nextMonth = new Date();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
 
-    onAdd({
-      ...formData,
-      status: "Active",
-      joiningDate: currentDate.toISOString(),
-      nextPayment: nextMonth.toISOString(),
-      attendance: 100, // Initial attendance rate
-    });
+    try {
+      await onAdd({
+        ...formData,
+        status: "Active",
+        joiningDate: currentDate.toISOString(),
+        nextPayment: nextMonth.toISOString(),
+        attendance: 100, // Initial attendance rate
+      });
 
-    setFormData({
-      name: "",
-      email: "",
-      password: "",
-      membershipType: "Basic" as const,
-      trainer: "",
-    });
-    onClose();
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        membershipType: "Basic",
+        trainer: "",
+      });
+      
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Failed to add member');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -110,6 +148,16 @@ export default function AddMemberModal({ isOpen, onClose, onAdd }: AddMemberModa
                 className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
               />
             </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">
+                Member Number
+              </label>
+              <div className="w-full px-4 py-2 bg-[#131826] border border-gray-800 rounded-lg text-gray-400 flex items-center">
+                <span>Auto-generated 6-digit number</span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">A unique 6-digit number will be assigned automatically</p>
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">
@@ -131,13 +179,18 @@ export default function AddMemberModal({ isOpen, onClose, onAdd }: AddMemberModa
               <label className="block text-sm font-medium text-gray-400 mb-1">
                 Assigned Trainer
               </label>
-              <input
-                type="text"
+              <select
                 value={formData.trainer}
                 onChange={(e) => setFormData({ ...formData, trainer: e.target.value })}
-                required
-                className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
-              />
+                className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 focus:outline-none focus:border-blue-500"
+              >
+                <option value="">No Trainer</option>
+                {trainers.map((trainer) => (
+                  <option key={trainer._id} value={trainer._id}>
+                    {trainer.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -148,12 +201,19 @@ export default function AddMemberModal({ isOpen, onClose, onAdd }: AddMemberModa
               className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </button>              <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
             >
-              Add Member
+              {loading ? (
+                <>
+                  <Loader className="w-4 h-4 animate-spin mr-2" />
+                  <span>Adding...</span>
+                </>
+              ) : (
+                "Add Member"
+              )}
             </button>
           </div>
         </form>
