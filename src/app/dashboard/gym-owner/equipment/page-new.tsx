@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import EquipmentModal from './components/equipment-modal';
+import EquipmentModal from './components/equipment-modal-new';
 import { useAuth } from '@/app/hooks/useAuth';
 import { Loader, PlusCircle, Search, Filter, Edit, Trash2, AlertCircle } from 'lucide-react';
 import { IEquipment } from '@/app/models/Equipment';
@@ -31,36 +31,15 @@ export default function EquipmentManagement() {
   const fetchEquipment = async () => {
     setIsLoading(true);
     try {
-      // First, ensure the auth token is fresh by refreshing the session
-      try {
-        await fetch('/api/auth/refresh', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-      } catch (refreshError) {
-        console.error('Failed to refresh token:', refreshError);
-        // Continue anyway, the original token might still be valid
-      }
-      
-      // Now make the equipment API call
       const response = await fetch('/api/equipment', {
         method: 'GET',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
-        cache: 'no-store', // Prevent caching to always get fresh data
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          // If unauthorized, try to refresh the auth state
-          setError('Your session has expired. Please refresh the page or log in again.');
-          return;
-        }
         throw new Error(`Error: ${response.status}`);
       }
 
@@ -70,7 +49,7 @@ export default function EquipmentManagement() {
       // Extract unique categories
       const uniqueCategories = Array.from(
         new Set(data.equipment.map((item: IEquipment) => item.category))
-      ) as string[];
+      );
       setCategories(uniqueCategories);
       
       setError(null);
@@ -84,19 +63,8 @@ export default function EquipmentManagement() {
   };
 
   useEffect(() => {
-    // Check if user is available first
-    if (user) {
-      fetchEquipment();
-    } else {
-      // If no user is found, check again in a moment
-      // This allows the auth state to be loaded if it's just not ready yet
-      const timer = setTimeout(() => {
-        fetchEquipment();
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [user]);
+    fetchEquipment();
+  }, []);
 
   const handleAddNew = () => {
     setModalMode('add');
@@ -114,34 +82,15 @@ export default function EquipmentManagement() {
     if (confirm('Are you sure you want to delete this equipment?')) {
       try {
         setIsLoading(true);
-        
-        // Try to refresh the token first
-        try {
-          await fetch('/api/auth/refresh', {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-        } catch (refreshError) {
-          console.error('Failed to refresh token:', refreshError);
-        }
-        
         const response = await fetch(`/api/equipment/${id}`, {
           method: 'DELETE',
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
-          cache: 'no-store',
         });
 
         if (!response.ok) {
-          if (response.status === 401) {
-            setError('Your session has expired. Please refresh the page or log in again.');
-            return;
-          }
           throw new Error(`Error: ${response.status}`);
         }
 
@@ -161,19 +110,6 @@ export default function EquipmentManagement() {
     try {
       setIsLoading(true);
       
-      // Try to refresh the token first
-      try {
-        await fetch('/api/auth/refresh', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-      } catch (refreshError) {
-        console.error('Failed to refresh token:', refreshError);
-      }
-      
       if (modalMode === 'add') {
         // Create new equipment
         const response = await fetch('/api/equipment', {
@@ -186,10 +122,6 @@ export default function EquipmentManagement() {
         });
 
         if (!response.ok) {
-          if (response.status === 401) {
-            setError('Your session has expired. Please refresh the page or log in again.');
-            return;
-          }
           throw new Error(`Error: ${response.status}`);
         }
 
@@ -209,10 +141,6 @@ export default function EquipmentManagement() {
         });
 
         if (!response.ok) {
-          if (response.status === 401) {
-            setError('Your session has expired. Please refresh the page or log in again.');
-            return;
-          }
           throw new Error(`Error: ${response.status}`);
         }
 
@@ -237,9 +165,8 @@ export default function EquipmentManagement() {
   // Filter equipment based on search and category
   const filteredEquipment = equipment.filter(item => {
     const matchesSearch = searchQuery === '' || 
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.serialNumber && item.serialNumber.toLowerCase().includes(searchQuery.toLowerCase()));
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()));
     
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
     
@@ -263,47 +190,14 @@ export default function EquipmentManagement() {
     }
   };
 
-  // Handle authentication check
-  const isUserAuthenticated = !!user;
-  
-  // Function to reload page after authentication refresh
-  const handleReloadPage = () => {
-    window.location.reload();
-  };
-
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Equipment Management</h1>
       
       {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-lg flex items-center justify-between">
-          <div className="flex items-center">
-            <AlertCircle className="w-5 h-5 mr-2" />
-            {error}
-          </div>
-          {error.includes('session has expired') && (
-            <button 
-              onClick={handleReloadPage}
-              className="px-3 py-1 bg-red-200 hover:bg-red-300 text-red-800 rounded-md transition-colors"
-            >
-              Refresh
-            </button>
-          )}
-        </div>
-      )}
-      
-      {!isUserAuthenticated && !isLoading && (
-        <div className="mb-4 p-4 bg-yellow-100 text-yellow-800 rounded-lg flex items-center justify-between">
-          <div className="flex items-center">
-            <AlertCircle className="w-5 h-5 mr-2" />
-            Not authenticated. Please sign in again.
-          </div>
-          <button 
-            onClick={() => window.location.href = '/login'}
-            className="px-3 py-1 bg-yellow-200 hover:bg-yellow-300 text-yellow-800 rounded-md transition-colors"
-          >
-            Go to Login
-          </button>
+        <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-lg flex items-center">
+          <AlertCircle className="w-5 h-5 mr-2" />
+          {error}
         </div>
       )}
       
@@ -367,8 +261,8 @@ export default function EquipmentManagement() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Name</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Category</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Condition</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Quantity</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Weight (kg)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Purchase Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Next Maintenance</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Cost</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                   </tr>
@@ -382,7 +276,7 @@ export default function EquipmentManagement() {
                     </tr>
                   ) : (
                     filteredEquipment.map((item) => (
-                      <tr key={item._id as string} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <tr key={item._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                         <td className="px-6 py-4 whitespace-nowrap">{item.name}</td>
                         <td className="px-6 py-4 whitespace-nowrap">{item.category}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -390,8 +284,8 @@ export default function EquipmentManagement() {
                             {item.condition}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">{item.quantity || 1}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">{item.weight ? `${item.weight}kg` : 'N/A'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">{formatDate(item.purchaseDate)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">{formatDate(item.maintenanceDate)}</td>
                         <td className="px-6 py-4 whitespace-nowrap">${item.cost.toFixed(2)}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <button 
@@ -402,7 +296,7 @@ export default function EquipmentManagement() {
                             <Edit className="w-4 h-4 mr-1" /> Edit
                           </button>
                           <button 
-                            onClick={() => handleDelete(item._id as string)}
+                            onClick={() => handleDelete(item._id)}
                             className="text-red-600 hover:text-red-900 flex items-center"
                             disabled={isLoading}
                           >
