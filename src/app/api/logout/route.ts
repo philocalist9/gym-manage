@@ -12,13 +12,20 @@ export async function POST(req: NextRequest) {
       { 
         message: 'Logged out successfully',
         // Include additional info for super admin for logging purposes
-        ...(isSuperAdmin && { superAdminLogout: true, timestamp: new Date().toISOString() })
+        ...(isSuperAdmin && { superAdminLogout: true, timestamp: new Date().toISOString() }),
+        // Include a cache busting token to ensure the response is not cached
+        cacheBuster: Date.now()
       },
       { status: 200 }
     );
 
     // Clear the token cookie using our utility function
     clearAuthCookie(response);
+    
+    // Add cache control headers to prevent browser caching
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
     
     // For super admin, we might want to log this event for auditing
     if (isSuperAdmin) {

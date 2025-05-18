@@ -170,18 +170,74 @@ export function useAuth() {
   const logout = async () => {
     setAuthState(prev => ({ ...prev, loading: true }));
     try {
+      // Call the logout API with cache-control headers
       await fetch('/api/logout', {
         method: 'POST',
         credentials: 'include',
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
       
+      // Clear authentication state
       setAuthState({
         user: null,
         loading: false,
         error: null
       });
       
-      router.push('/login');
+      // Create a timestamp for cache busting
+      const timestamp = new Date().getTime();
+      
+      // Clear any cached data from storage
+      if (typeof window !== 'undefined') {
+        try {
+          // Clear any localStorage/sessionStorage items
+          localStorage.removeItem('lastActivityTimestamp');
+          sessionStorage.removeItem('userPreferences');
+          
+          // Clear any application cache if available
+          if ('caches' in window) {
+            caches.keys().then(keyList => {
+              return Promise.all(keyList.map(key => {
+                return caches.delete(key);
+              }));
+            });
+          }
+          
+          // Clear memory cache by setting dummy fetch headers
+          const headers = new Headers();
+          headers.append('pragma', 'no-cache');
+          headers.append('cache-control', 'no-cache');
+          
+          // Apply no-cache directive to fetch requests
+          const fetchOptions = {
+            method: 'GET',
+            headers: headers
+          };
+          
+          // Make a cache-busting fetch to reload fresh data
+          fetch('/api/auth/user', fetchOptions).catch(() => {
+            // Ignore fetch errors during logout
+          });
+        } catch (e) {
+          console.warn('Failed to clear storage during logout:', e);
+        }
+      }
+
+      // Use history.pushState to modify history before redirect
+      if (typeof window !== 'undefined' && window.history) {
+        // Replace current history entry with logout entry to prevent back navigation
+        window.history.replaceState(null, '', `/logout?t=${timestamp}`);
+      }
+
+      // Redirect with history replacement to prevent going back
+      // Include from=logout parameter to show the correct message
+      router.replace(`/login?from=logout&t=${timestamp}`);
+      
       return { success: true };
     } catch (error) {
       setAuthState(prev => ({

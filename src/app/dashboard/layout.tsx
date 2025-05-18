@@ -32,6 +32,8 @@ export default function DashboardLayout({
         <Sidebar />
         <div className="flex-1 ml-64">
           <main className="h-screen overflow-y-auto">
+            {/* Security components rendered in client */}
+            <ClientSecurityWrapper />
             {children}
           </main>
         </div>
@@ -39,3 +41,6 @@ export default function DashboardLayout({
     </div>
   );
 }
+
+// Use regular import for client-side wrapper component
+import ClientSecurityWrapper from "@/app/components/client-security-wrapper";

@@ -43,6 +43,42 @@ export default function Login() {
     checkSystemInit();
   }, []);
 
+  // Check if session was expired or user was logged out
+  useEffect(() => {
+    const from = searchParams.get('from');
+    if (from === 'session_expired') {
+      setErrorMessage('Your session has expired. Please log in again.');
+    } else if (from === 'logout') {
+      setShowMessage(true);
+    }
+  }, [searchParams]);
+  
+  // Add cache control meta tags
+  useEffect(() => {
+    // Add meta tags to prevent caching
+    const meta1 = document.createElement('meta');
+    meta1.httpEquiv = 'Cache-Control';
+    meta1.content = 'no-cache, no-store, must-revalidate';
+    
+    const meta2 = document.createElement('meta');
+    meta2.httpEquiv = 'Pragma';
+    meta2.content = 'no-cache';
+    
+    const meta3 = document.createElement('meta');
+    meta3.httpEquiv = 'Expires';
+    meta3.content = '0';
+    
+    document.head.appendChild(meta1);
+    document.head.appendChild(meta2);
+    document.head.appendChild(meta3);
+    
+    return () => {
+      document.head.removeChild(meta1);
+      document.head.removeChild(meta2);
+      document.head.removeChild(meta3);
+    };
+  }, []);
+
   // Check if user is already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -125,7 +161,11 @@ export default function Login() {
               <svg className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-sm text-green-600 dark:text-green-400">Registration successful! Please log in to continue.</p>
+              <p className="text-sm text-green-600 dark:text-green-400">
+                {searchParams.get('from') === 'logout' 
+                  ? "Logout successful! You have been securely signed out."
+                  : "Registration successful! Please log in to continue."}
+              </p>
             </div>
           </div>
         )}

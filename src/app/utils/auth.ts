@@ -99,7 +99,7 @@ export function setAuthCookie(response: NextResponse, token: string, isSuperAdmi
 }
 
 /**
- * Clear authentication cookie in response
+ * Clear authentication cookie in response and add no-cache headers
  */
 export function clearAuthCookie(response: NextResponse) {
   response.cookies.set('token', '', {
@@ -107,6 +107,11 @@ export function clearAuthCookie(response: NextResponse) {
     expires: new Date(0),
     path: '/',
   });
+  
+  // Add cache control headers to prevent browser caching
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
 }
 
 /**

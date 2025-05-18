@@ -29,6 +29,14 @@ export function middleware(request: NextRequest) {
   
   // Check if path is public
   if (publicPaths.some(path => pathname.startsWith(path))) {
+    // For login page, add cache control headers to ensure it's always fresh
+    if (pathname === '/login') {
+      const response = NextResponse.next();
+      response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      return response;
+    }
     return NextResponse.next();
   }
   
@@ -43,6 +51,7 @@ export function middleware(request: NextRequest) {
     if (!token) {
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('callbackUrl', pathname);
+      loginUrl.searchParams.set('from', 'session_expired');
       return NextResponse.redirect(loginUrl);
     }
     
@@ -56,7 +65,12 @@ export function middleware(request: NextRequest) {
       
       // Special handling for super-admin routes
       if (pathname.startsWith('/dashboard/super-admin')) {
-        return NextResponse.next();
+        // Add cache control headers for protected routes
+        const response = NextResponse.next();
+        response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        response.headers.set('Pragma', 'no-cache');
+        response.headers.set('Expires', '0');
+        return response;
       }
     }
     
@@ -64,6 +78,7 @@ export function middleware(request: NextRequest) {
     if (!userData) {
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('callbackUrl', pathname);
+      loginUrl.searchParams.set('from', 'invalid_token');
       return NextResponse.redirect(loginUrl);
     }
     
@@ -80,6 +95,13 @@ export function middleware(request: NextRequest) {
       // Redirect to appropriate dashboard based on role
       return NextResponse.redirect(new URL(`/dashboard/${userRole}`, request.url));
     }
+    
+    // Add cache control headers for protected routes to prevent caching
+    const response = NextResponse.next();
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    return response;
   }
   
   return NextResponse.next();
