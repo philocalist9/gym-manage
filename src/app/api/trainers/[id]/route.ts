@@ -20,12 +20,15 @@ export async function GET(
 
     await connectDB();
     
+    console.log(`Fetching trainer with ID: ${params.id}, requested by user role: ${userData.role}, user ID: ${userData.id}`);
+    
     // Populate the gym data to get access to gym name and address
     const trainer = await Trainer.findById(params.id)
       .select('-password')
-      .populate('gymId', 'gymName address phone email');
+      .populate('gymId', 'name address phone email');
     
     if (!trainer) {
+      console.log(`Trainer with ID ${params.id} not found`);
       return NextResponse.json(
         { error: 'Trainer not found' },
         { status: 404 }
@@ -33,8 +36,46 @@ export async function GET(
     }
 
     // Check if the user is authorized to see this trainer
-    // Allow access if: 1) user is super-admin, 2) user is the gym owner of this trainer, or 3) user is the trainer themselves
-    if (userData.role !== 'super-admin' && 
+    // Allow access if: 
+    // 1) user is super-admin
+    // 2) user is the gym owner of this trainer 
+    // 3) user is the trainer themselves
+    // 4) user is a member with this trainer assigned to them
+    if (userData.role === 'member') {
+      // For members, we need to check if this trainer is assigned to them
+      try {
+        const Member = require('@/app/models/Member').default;
+        const member = await Member.findById(userData.id);
+        
+        // Allow access if this trainer is assigned to the member
+        // Use string comparison to avoid ObjectID comparison issues
+        const memberTrainerId = member?.trainer ? member.trainer.toString() : null;
+        const requestedTrainerId = params.id;
+        
+        console.log('Member trainer check:', {
+          memberTrainerId,
+          requestedTrainerId,
+          match: memberTrainerId === requestedTrainerId
+        });
+        
+        if (member && memberTrainerId && memberTrainerId === requestedTrainerId) {
+          // This is the member's assigned trainer - allow access
+          console.log('Access granted: Member is accessing their assigned trainer');
+        } else {
+          console.log('Access denied: Not the member\'s assigned trainer');
+          return NextResponse.json(
+            { error: 'Forbidden: This is not your assigned trainer' },
+            { status: 403 }
+          );
+        }
+      } catch (memberError) {
+        console.error('Error checking member-trainer relationship:', memberError);
+        return NextResponse.json(
+          { error: 'Could not verify trainer-member relationship' },
+          { status: 500 }
+        );
+      }
+    } else if (userData.role !== 'super-admin' && 
         trainer.gymId.toString() !== userData.id && 
         trainer._id.toString() !== userData.id) {
       return NextResponse.json(

@@ -59,10 +59,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       gym: {
         id: gym._id,
-        name: gym.gymName,
+        name: gym.gymName, // This is the correct field name from the Gym model
         address: gym.address,
         phone: gym.phone,
-        email: gym.email
+        email: gym.email,
+        ownerName: gym.ownerName
       }
     }, { status: 200 });
   } catch (error: any) {

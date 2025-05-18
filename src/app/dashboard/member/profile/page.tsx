@@ -154,27 +154,51 @@ export default function MemberProfilePage() {
         
         if (member.gymId) {
           try {
+            console.log('Fetching gym data for member');
             // Create a dedicated endpoint for members to fetch gym info
             const gymResponse = await fetch('/api/members/gym', {
               // Add cache control to prevent stale data
               cache: 'no-cache',
+              next: { revalidate: 0 }, // Force revalidation
               headers: {
                 'Content-Type': 'application/json'
               }
             });
             
+            console.log('Gym API response status:', gymResponse.status);
+            
             if (gymResponse.ok) {
               const gymData = await gymResponse.json();
+              console.log('Gym data received:', gymData);
+              
               if (gymData.gym) {
-                gymName = gymData.gym.name;
-                gymAddress = gymData.gym.address;
-                console.log('Gym data fetched successfully');
+                // Use gymName field as confirmed from the Gym model
+                gymName = gymData.gym.name || 'Unknown Gym';
+                gymAddress = gymData.gym.address || 'Address unavailable';
+                console.log('Gym data fetched successfully:', { gymName, gymAddress });
               } else {
                 console.warn('Gym data is empty or incomplete');
               }
             } else {
-              const errorText = await gymResponse.text().catch(() => 'Unknown error');
-              console.error(`Failed to fetch gym data (${gymResponse.status}):`, errorText);
+              const errorData = await gymResponse.json().catch(() => ({ error: 'Unknown error' }));
+              console.error(`Failed to fetch gym data (${gymResponse.status}):`, errorData);
+              
+              // Try fallback - direct fetch from gym API if available
+              try {
+                const gymId = member.gymId.toString();
+                const fallbackGymResponse = await fetch(`/api/gym/${gymId}`);
+                
+                if (fallbackGymResponse.ok) {
+                  const fallbackData = await fallbackGymResponse.json();
+                  if (fallbackData.gym) {
+                    gymName = fallbackData.gym.gymName || 'Unknown Gym';
+                    gymAddress = fallbackData.gym.address || 'Address unavailable';
+                    console.log('Successfully fetched gym data via fallback');
+                  }
+                }
+              } catch (fallbackError) {
+                console.error('Fallback gym fetch failed:', fallbackError);
+              }
             }
           } catch (gymError) {
             console.error('Error fetching gym data:', gymError);
@@ -186,32 +210,95 @@ export default function MemberProfilePage() {
         // Fetch trainer data if member has a trainer
         let trainerName = 'No trainer assigned';
         
-        if (member.trainer) {
-          try {
-            const trainerId = typeof member.trainer === 'string' ? member.trainer : member.trainer.toString();
-            const trainerResponse = await fetch(`/api/trainers/${trainerId}`, {
-              // Add cache control to prevent stale data
-              cache: 'no-cache',
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            });
-            
-            if (trainerResponse.ok) {
-              const trainerData = await trainerResponse.json();
-              if (trainerData.trainer && trainerData.trainer.name) {
-                trainerName = trainerData.trainer.name;
-              } else {
-                console.warn('Trainer data missing or incomplete');
-              }
-            } else {
-              console.error(`Failed to fetch trainer data (${trainerResponse.status})`);
+        // Try to fetch trainer data using the dedicated member-trainer endpoint first
+        try {
+          console.log('Fetching trainer data using member-specific endpoint');
+          
+          const trainerResponse = await fetch('/api/members/trainer', {
+            cache: 'no-cache',
+            next: { revalidate: 0 }, // Force revalidation for fresh data
+            headers: {
+              'Content-Type': 'application/json'
             }
-          } catch (trainerError) {
-            console.error('Error fetching trainer data:', trainerError);
+          });
+          
+          const trainerData = await trainerResponse.json();
+          console.log('Trainer API response:', { status: trainerResponse.status, data: trainerData });
+          
+          if (trainerResponse.ok) {
+            if (trainerData.trainer && trainerData.trainer.name) {
+              trainerName = trainerData.trainer.name;
+              console.log('Successfully fetched trainer data:', trainerData.trainer.name);
+            } else if (trainerData.message === 'No trainer assigned to this member') {
+              console.log('API confirmed no trainer is assigned');
+              trainerName = 'No trainer assigned';
+            } else {
+              console.warn('Trainer data missing or incomplete');
+              
+              // If member has trainer but data is incomplete, show better message
+              if (member.trainer) {
+                trainerName = 'Trainer information unavailable';
+              }
+            }
+          } else if (trainerResponse.status === 404) {
+            console.log('No trainer found (404)');
+            trainerName = 'No trainer assigned';
+          } else {
+            console.error(`Failed to fetch trainer data (${trainerResponse.status}):`, trainerData);
+            
+            // If we know there should be a trainer, show error message and try fallback
+            if (member.trainer) {
+              // Fall back to the original method as a backup
+              try {
+                const trainerId = typeof member.trainer === 'string' ? member.trainer : member.trainer.toString();
+                console.log('Falling back to direct trainer endpoint with ID:', trainerId);
+                
+                const fallbackResponse = await fetch(`/api/trainers/${trainerId}`, {
+                  cache: 'no-cache',
+                  next: { revalidate: 0 },
+                  headers: {
+                    'Content-Type': 'application/json'
+                  }
+                });
+                
+                if (fallbackResponse.ok) {
+                  const fallbackData = await fallbackResponse.json();
+                  if (fallbackData.trainer && fallbackData.trainer.name) {
+                    trainerName = fallbackData.trainer.name;
+                    console.log('Successfully fetched trainer data using fallback method');
+                  } else {
+                    trainerName = 'Trainer data incomplete';
+                  }
+                } else {
+                  console.error(`Fallback trainer fetch failed (${fallbackResponse.status})`);
+                  trainerName = 'Unable to load trainer info';
+                }
+              } catch (fallbackError) {
+                console.error('Error in fallback trainer fetch:', fallbackError);
+                trainerName = 'Error loading trainer info';
+              }
+            }
           }
-        } else {
-          console.log('No trainer assigned to this member');
+        } catch (trainerError) {
+          console.error('Error fetching trainer data:', trainerError);
+          trainerName = 'Error loading trainer info';
+          
+          // One more attempt directly with the member's trainer ID if available
+          if (member.trainer) {
+            try {
+              const trainerId = typeof member.trainer === 'string' ? member.trainer : member.trainer.toString();
+              const lastResortResponse = await fetch(`/api/trainers/${trainerId}`);
+              
+              if (lastResortResponse.ok) {
+                const lastResortData = await lastResortResponse.json();
+                if (lastResortData.trainer?.name) {
+                  trainerName = lastResortData.trainer.name;
+                }
+              }
+            } catch (lastError) {
+              console.error('Final attempt to fetch trainer failed:', lastError);
+            }
+          }
         }
         
         // Update profile state with fetched data
