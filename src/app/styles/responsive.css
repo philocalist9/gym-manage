@@ -12,6 +12,15 @@
     margin-top: 2rem;
     margin-bottom: 2rem;
   }
+  
+  /* Navbar and sidebar mobile styles */
+  .mobile-menu-open {
+    overflow: hidden;
+  }
+  
+  .mobile-nav-item {
+    padding: 0.75rem 1rem;
+  }
 }
 
 /* Tablet styles */
@@ -51,6 +60,11 @@
 /* Transition utilities for responsive layouts */
 .responsive-fade {
   transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Mobile sidebar transition */
+.sidebar-transition {
+  transition: transform 0.3s ease, width 0.3s ease;
 }
 
 /* Mobile touch interactions */

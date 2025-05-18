@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,8 +11,11 @@ import {
   Tooltip,
   Legend,
   PointElement,
+  ChartOptions,
 } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
+import { Search, Building2 } from 'lucide-react';
+import { useWindowSize } from '@/app/hooks/useWindowSize';
 
 ChartJS.register(
   CategoryScale,
@@ -42,6 +45,54 @@ interface OverviewStats {
 export default function SuperAdminDashboard() {
   const [selectedTimeRange, setSelectedTimeRange] = useState('week');
   const [searchQuery, setSearchQuery] = useState('');
+  // Use the windowSize hook for responsiveness
+  const { width: windowWidth } = useWindowSize();
+
+  // Determine if on mobile
+  const isMobile = windowWidth < 768;
+  
+  // Responsive chart options
+  const getChartOptions = (title: string): ChartOptions<'bar' | 'line'> => {
+    return {
+      responsive: true,
+      maintainAspectRatio: !isMobile,
+      aspectRatio: isMobile ? 1 : 2,
+      plugins: {
+        legend: {
+          position: isMobile ? 'bottom' : 'top',
+          labels: {
+            boxWidth: isMobile ? 12 : 20,
+            font: {
+              size: isMobile ? 10 : 12
+            }
+          }
+        },
+        title: {
+          display: true,
+          text: title,
+          font: {
+            size: isMobile ? 14 : 16
+          }
+        },
+      },
+      scales: {
+        y: {
+          ticks: {
+            font: {
+              size: isMobile ? 10 : 12
+            }
+          }
+        },
+        x: {
+          ticks: {
+            font: {
+              size: isMobile ? 10 : 12
+            }
+          }
+        }
+      }
+    };
+  };
 
   // Mock data for demonstration
   const overviewStats: OverviewStats = {
@@ -51,186 +102,180 @@ export default function SuperAdminDashboard() {
     activeSubscriptions: 45,
   };
 
-  const mockGymList = [
-    { id: 1, name: "FitZone Plus", location: "New York", status: "active", members: 200, revenue: 15000 },
-    { id: 2, name: "PowerHouse Gym", location: "Los Angeles", status: "active", members: 180, revenue: 12000 },
-    { id: 3, name: "Elite Fitness", location: "Chicago", status: "inactive", members: 150, revenue: 10000 },
-  ];
-
+  // Sample revenue data
   const revenueData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [
       {
         label: 'Revenue',
-        data: [65000, 75000, 85000, 95000, 110000, 120000],
-        borderColor: 'rgb(75, 192, 192)',
-        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+        data: [18500, 22000, 19500, 24000, 25500, 28000],
+        backgroundColor: 'rgba(59, 130, 246, 0.6)',
       },
     ],
   };
-
-  const newGymsData = {
+  
+  // Sample user growth data
+  const userGrowthData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [
       {
-        label: 'New Gyms',
-        data: [4, 6, 8, 5, 7, 9],
-        backgroundColor: 'rgba(53, 162, 235, 0.5)',
+        label: 'New Users',
+        data: [120, 145, 132, 155, 180, 205],
+        borderColor: 'rgba(34, 197, 94, 1)',
+        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+        tension: 0.3,
+        fill: true
       },
     ],
   };
 
+  // Mock data for gym list
+  const mockGymList = [
+    { id: '1', name: 'Fitness Plus', location: 'New York', members: 350, revenue: 42000, status: 'Active' },
+    { id: '2', name: 'PowerLift Gym', location: 'Los Angeles', members: 280, revenue: 36000, status: 'Active' },
+    { id: '3', name: 'Elite Fitness', location: 'Chicago', members: 210, revenue: 27500, status: 'Pending' },
+    { id: '4', name: 'FlexFit Center', location: 'Miami', members: 180, revenue: 22000, status: 'Active' },
+    { id: '5', name: 'Iron Works Gym', location: 'Seattle', members: 160, revenue: 19500, status: 'Suspended' }
+  ];
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Super Admin Dashboard</h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">Manage and monitor all gyms and system-wide metrics</p>
-      </div>
-
-      {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {[
-          { title: 'Total Gyms', value: overviewStats.totalGyms, change: '+5%' },
-          { title: 'Total Users', value: overviewStats.totalUsers.toLocaleString(), change: '+12%' },
-          { title: 'Total Revenue', value: `$${overviewStats.totalRevenue.toLocaleString()}`, change: '+8%' },
-          { title: 'Active Subscriptions', value: overviewStats.activeSubscriptions, change: '+3%' },
-        ].map((stat, index) => (
-          <div
-            key={index}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 transition-transform hover:scale-105"
-          >
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{stat.title}</h3>
-            <div className="mt-2 flex items-baseline">
-              <p className="text-2xl font-semibold text-gray-900 dark:text-white">{stat.value}</p>
-              <span className="ml-2 text-sm font-medium text-green-600 dark:text-green-400">
-                {stat.change}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue Overview</h3>
-          <Line 
-            data={revenueData}
-            options={{
-              responsive: true,
-              plugins: {
-                legend: { position: 'top' as const },
-              },
-            }}
-          />
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">New Gyms</h3>
-          <Bar
-            data={newGymsData}
-            options={{
-              responsive: true,
-              plugins: {
-                legend: { position: 'top' as const },
-              },
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Gym List */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Registered Gyms</h3>
-          <div className="flex gap-4">
-            <input
-              type="text"
-              placeholder="Search gyms..."
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              Add New Gym
-            </button>
+    <div className="pb-6">
+      <h1 className="text-2xl md:text-3xl font-bold mb-3 md:mb-5">Super Admin Dashboard</h1>
+      
+      {/* Top stats cards - responsive grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 mb-3 md:mb-5">
+        <div className="bg-[#151C2C] p-3 md:p-4 rounded-xl shadow">
+          <h3 className="text-gray-400 text-sm mb-1">Total Gyms</h3>
+          <p className="text-2xl md:text-3xl font-semibold">{overviewStats.totalGyms}</p>
+          <div className="mt-1 md:mt-2 text-sm">
+            <span className="text-green-500">+3</span> this month
           </div>
         </div>
         
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-900">
+        <div className="bg-[#151C2C] p-3 md:p-4 rounded-xl shadow">
+          <h3 className="text-gray-400 text-sm mb-1">Total Users</h3>
+          <p className="text-2xl md:text-3xl font-semibold">{overviewStats.totalUsers}</p>
+          <div className="mt-1 md:mt-2 text-sm">
+            <span className="text-green-500">+124</span> this month
+          </div>
+        </div>
+        
+        <div className="bg-[#151C2C] p-3 md:p-4 rounded-xl shadow">
+          <h3 className="text-gray-400 text-sm mb-1">Revenue</h3>
+          <p className="text-2xl md:text-3xl font-semibold">${overviewStats.totalRevenue.toLocaleString()}</p>
+          <div className="mt-1 md:mt-2 text-sm">
+            <span className="text-green-500">+8%</span> this month
+          </div>
+        </div>
+        
+        <div className="bg-[#151C2C] p-3 md:p-4 rounded-xl shadow">
+          <h3 className="text-gray-400 text-sm mb-1">Active Subscriptions</h3>
+          <p className="text-2xl md:text-3xl font-semibold">{overviewStats.activeSubscriptions}</p>
+          <div className="mt-1 md:mt-2 text-sm">
+            <span className="text-red-500">-12</span> this month
+          </div>
+        </div>
+      </div>
+      
+      {/* Charts section - responsive layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-6">
+        <div className="bg-[#151C2C] p-3 md:p-4 rounded-xl shadow">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 md:mb-4 gap-2">
+            <h2 className="text-lg font-semibold">Revenue Overview</h2>
+            <div className="flex space-x-2 self-start">
+              <button 
+                onClick={() => setSelectedTimeRange('week')}
+                className={`px-2 py-1 text-xs rounded-md ${selectedTimeRange === 'week' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Week
+              </button>
+              <button 
+                onClick={() => setSelectedTimeRange('month')}
+                className={`px-2 py-1 text-xs rounded-md ${selectedTimeRange === 'month' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Month
+              </button>
+              <button 
+                onClick={() => setSelectedTimeRange('year')}
+                className={`px-2 py-1 text-xs rounded-md ${selectedTimeRange === 'year' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Year
+              </button>
+            </div>
+          </div>
+          <div className="h-[300px] md:h-[350px]">
+            <Bar options={getChartOptions('Revenue Over Time')} data={revenueData} />
+          </div>
+        </div>
+        
+        <div className="bg-[#151C2C] p-3 md:p-4 rounded-xl shadow">
+          <h2 className="text-lg font-semibold mb-3 md:mb-4">User Growth</h2>
+          <div className="h-[300px] md:h-[350px]">
+            <Line options={getChartOptions('User Growth Trend')} data={userGrowthData} />
+          </div>
+        </div>
+      </div>
+      
+      {/* Gym listing section */}
+      <div className="bg-[#151C2C] p-3 md:p-4 rounded-xl shadow mb-6 overflow-hidden">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+          <div className="flex items-center gap-2">
+            <Building2 className="text-blue-500" size={20} />
+            <h2 className="text-lg font-semibold">Gym Overview</h2>
+          </div>
+          <div className="relative w-full md:w-64">
+            <input
+              type="text"
+              placeholder="Search gyms..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#1A2234] text-gray-300 border border-gray-700 rounded-md p-2 pl-8 text-sm focus:outline-none focus:border-blue-500"
+            />
+            <Search className="absolute left-2 top-2.5 w-4 h-4 text-gray-500" />
+          </div>
+        </div>
+        <div className="overflow-x-auto -mx-3 md:-mx-4 px-3 md:px-4">
+          <table className="min-w-full divide-y divide-gray-700">
+            <thead className="bg-[#1A2234]">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Gym Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Location
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Members
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Revenue
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Name</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Location</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase hidden sm:table-cell">Members</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase hidden md:table-cell">Revenue</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Status</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="divide-y divide-gray-800">
               {mockGymList.map((gym) => (
-                <tr key={gym.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">{gym.name}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{gym.location}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      gym.status === 'active' 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                    }`}>
+                <tr key={gym.id} className="hover:bg-[#1A2234]">
+                  <td className="px-4 py-3 text-sm whitespace-nowrap">{gym.name}</td>
+                  <td className="px-4 py-3 text-sm whitespace-nowrap">{gym.location}</td>
+                  <td className="px-4 py-3 text-sm hidden sm:table-cell">{gym.members}</td>
+                  <td className="px-4 py-3 text-sm hidden md:table-cell">${gym.revenue.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-sm">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                      ${gym.status === 'Active' ? 'bg-green-100 text-green-800' : 
+                        gym.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 
+                        'bg-red-100 text-red-800'}`}>
                       {gym.status}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {gym.members}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    ${gym.revenue.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-4">
-                      View
-                    </button>
-                    <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
-                      Disable
-                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-
-        <div className="mt-4 flex justify-between items-center">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            Showing 1 to {mockGymList.length} of {mockGymList.length} gyms
-          </div>
-          <div className="flex gap-2">
-            <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-              Previous
-            </button>
-            <button className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
-              Next
-            </button>
-          </div>
+        <div className="mt-4 text-xs text-gray-400 text-right">
+          Showing 1 to {mockGymList.length} of {mockGymList.length} gyms
         </div>
       </div>
     </div>

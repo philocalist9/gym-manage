@@ -60,16 +60,12 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
 
   return (
     <div 
-      className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+      className="min-h-screen bg-[#0B101B] text-gray-100"
       onClick={updateActivity}
       onKeyDown={updateActivity}
     >
-      {/* Session status indicator */}
-      <div className="fixed top-4 right-4 px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-        Session active
-      </div>
-      
-      <main className="w-full">
+      {/* Session status indicators - moved to navbar component */}
+      <main className="w-full pt-16 px-4 md:px-6">
         {children}
       </main>
     </div>

@@ -82,10 +82,42 @@ const superAdminMenuItems: MenuItem[] = [
   }
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  toggleSidebar?: () => void;
+}
+
+export default function Sidebar({ isOpen = false, toggleSidebar }: SidebarProps) {
   const pathname = usePathname();
   const { logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+  
+  // Handle touch swipe for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+  
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+  
+  const handleTouchEnd = () => {
+    // Minimum swipe distance to be considered a gesture (pixels)
+    const minSwipeDistance = 50;
+    
+    if (touchStart - touchEnd > minSwipeDistance && toggleSidebar) {
+      // Swipe left - close sidebar
+      toggleSidebar();
+    } else if (touchEnd - touchStart > minSwipeDistance && toggleSidebar && !isOpen) {
+      // Swipe right - open sidebar (when closed)
+      toggleSidebar();
+    }
+    
+    setTouchStart(0);
+    setTouchEnd(0);
+  };
   
   // Determine which dashboard we're in
   const isGymOwnerDashboard = pathname?.startsWith('/dashboard/gym-owner');
@@ -151,43 +183,33 @@ export default function Sidebar() {
     : gymOwnerMenu;
 
   return (
-    <div className="fixed top-0 left-0 h-screen w-64 bg-[#151C2C] border-r border-gray-800">
+    <aside 
+      className={`fixed top-16 left-0 h-[calc(100vh-4rem)] bg-[#151C2C] border-r border-gray-800 z-40 transition-all duration-300 
+        overflow-y-auto md:w-64 w-64 md:translate-x-0 shadow-lg ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <div className="p-6">
-        <Link 
-          href={
-            isSuperAdminDashboard 
-              ? "/dashboard/super-admin" 
-              : isTrainerDashboard 
-              ? "/dashboard/trainer" 
-              : isMemberDashboard 
-              ? "/dashboard/member" 
-              : "/dashboard/gym-owner"
-          } 
-          className="flex flex-col"
-        >
-          <h1 className="text-xl font-bold text-white">GymSync</h1>
-          <p className="text-xs text-gray-500">
-            {isSuperAdminDashboard 
-              ? "Super Admin Portal" 
-              : isTrainerDashboard 
-              ? "Trainer Portal" 
-              : isMemberDashboard 
-              ? "Member Portal" 
-              : "Management System"}
-          </p>
-        </Link>
+        {/* Logo and site header removed from sidebar since it's now in navbar */}
       </div>
 
-      <nav className="px-4 mt-2">
+      <nav className="px-3 mt-2 overflow-y-auto max-h-[calc(100vh-200px)]">
         {menuItems.map((item) => (
           <div key={item.href} className="relative group">
             <Link
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors
                 ${pathname === item.href 
-                  ? 'bg-blue-600 text-white font-medium' 
+                  ? 'bg-blue-600 text-white font-medium shadow-sm' 
                   : 'text-gray-400 hover:text-white hover:bg-[#1A2234]'
                 }`}
+              onClick={() => {
+                // Close sidebar on mobile when navigating
+                if (toggleSidebar && window.innerWidth < 768) {
+                  toggleSidebar();
+                }
+              }}
             >
               <item.icon className="w-5 h-5" strokeWidth={1.5} />
               <span className="text-sm">{item.label}</span>
@@ -214,6 +236,12 @@ export default function Sidebar() {
                 ? 'bg-blue-600 text-white' 
                 : 'text-gray-400 hover:text-white hover:bg-[#1A2234]'
               }`}
+            onClick={() => {
+              // Close sidebar on mobile when navigating
+              if (toggleSidebar && window.innerWidth < 768) {
+                toggleSidebar();
+              }
+            }}
           >
             <item.icon className="w-5 h-5" strokeWidth={1.5} />
             <span className="text-sm">{item.label}</span>
@@ -223,11 +251,12 @@ export default function Sidebar() {
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:text-red-300 hover:bg-[#1A2234] mt-4 w-full text-left"
+          disabled={isLoggingOut}
         >
           <LogOut className="w-5 h-5" strokeWidth={1.5} />
-          <span className="text-sm">Logout</span>
+          <span className="text-sm">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
         </button>
       </div>
-    </div>
+    </aside>
   );
 }
