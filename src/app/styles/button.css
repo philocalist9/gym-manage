@@ -1,0 +1,55 @@
+/* Button specific responsive styles */
+.login-button {
+  @apply w-full flex justify-center items-center py-3 px-4 border-0 rounded-lg text-white bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-150 shadow-md hover:shadow-lg;
+}
+
+/* Small screens - mobile */
+@media (max-width: 640px) {
+  .login-button {
+    @apply py-2.5 text-sm;
+  }
+}
+
+/* Medium screens - tablets */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .login-button {
+    @apply py-3 text-base;
+  }
+}
+
+/* Large screens - desktops */
+@media (min-width: 1025px) {
+  .login-button {
+    @apply py-3.5 text-base;
+  }
+}
+
+/* Button hover animations */
+.login-button:hover {
+  transform: translateY(-1px);
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+/* Loading state */
+.login-button-loading {
+  @apply opacity-90 cursor-not-allowed;
+}
+
+/* Hover media query for non-touch devices */
+@media (hover: hover) {
+  .login-button:hover {
+    @apply from-blue-600 to-blue-700;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  }
+}
+
+/* Touch feedback for touch devices */
+@media (hover: none) {
+  .login-button:active {
+    @apply opacity-90;
+    transform: scale(0.98);
+  }
+}

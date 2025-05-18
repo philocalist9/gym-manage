@@ -50,8 +50,8 @@ export function verifyToken(token: string): TokenPayload | null {
 /**
  * Get token from server component
  */
-export function getTokenFromServerComponent() {
-  const cookieStore = cookies();
+export async function getTokenFromServerComponent() {
+  const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
   return token;
 }
@@ -139,7 +139,7 @@ export function getSuperAdminPayload() {
  */
 export async function getUserSession(): Promise<SessionUser | null> {
   try {
-    const token = getTokenFromServerComponent();
+    const token = await getTokenFromServerComponent();
     if (!token) return null;
     
     const userData = verifyToken(token);
