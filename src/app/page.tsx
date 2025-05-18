@@ -5,12 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { ThemeToggle } from "./providers/theme-toggle";
 import { useState } from "react";
+import HeroSection from "./components/hero-section";
 
 export default function Home(): React.JSX.Element {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-md z-50 border-b border-gray-100 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -112,116 +113,11 @@ export default function Home(): React.JSX.Element {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-16 sm:pt-36 sm:pb-20 overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(59,130,246,0.1),rgba(59,130,246,0)_70%)]"></div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative flex flex-col lg:flex-row items-center gap-12">
-            <div className="flex-1 text-center lg:text-left z-10">
-              <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-50 dark:bg-gray-800 border border-blue-100 dark:border-gray-700 mb-8">
-                <div className="w-2 h-2 rounded-full bg-blue-500 mr-2 animate-pulse"></div>
-                <span className="text-blue-600 dark:text-blue-400 text-sm font-medium">No credit card required</span>
-              </div>
-              
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white tracking-tight leading-tight">
-                Elevate Your 
-                <br className="hidden lg:block" />
-                <span className="relative inline-block mt-2">
-                  <span className="relative z-10 bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-500 dark:to-blue-300 bg-clip-text text-transparent">
-                    Fitness Empire
-                  </span>
-                  <svg className="absolute -bottom-2 left-0 w-full h-3 text-blue-200 dark:text-blue-900" viewBox="0 0 100 10" preserveAspectRatio="none">
-                    <path fill="currentColor" d="M0 5 Q 25 0, 50 5 Q 75 10, 100 5 L 100 10 L 0 10 Z"></path>
-                  </svg>
-                </span>
-              </h1>
-              
-              <p className="mt-8 text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-xl">
-                The ultimate all-in-one platform that transforms how you manage your gym. 
-                Experience seamless operations, boost member engagement, and unlock growth potential.
-              </p>
-
-              <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link
-                  href="/register"
-                  className="group relative inline-flex items-center justify-center px-6 py-3 text-base font-medium rounded-xl text-white overflow-hidden transition-all duration-300 hover:scale-105"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400"></div>
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-400 dark:from-blue-400 dark:to-blue-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <span className="relative z-10 flex items-center">
-                    Start Free Trial
-                    <svg className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                  </span>
-                </Link>
-                <Link
-                  href="#features"
-                  className="group relative inline-flex items-center justify-center px-6 py-3 text-base font-medium rounded-xl text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-2 border-gray-200 dark:border-gray-700 transition-all duration-300 hover:scale-105"
-                >
-                  <span className="flex items-center">
-                    Watch Demo
-                    <svg className="ml-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </span>
-                </Link>
-              </div>
-
-              <div className="mt-12 flex items-center gap-8 justify-center lg:justify-start">
-                <div className="flex -space-x-2">
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className={`w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gradient-to-br ${
-                      ['from-blue-400 to-blue-500', 'from-green-400 to-green-500', 'from-purple-400 to-purple-500', 'from-red-400 to-red-500'][i]
-                    }`}></div>
-                  ))}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  <span className="font-semibold text-gray-900 dark:text-white">500+</span> gyms trust us
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex-1 relative w-full max-w-xl lg:max-w-none">
-              <div className="relative w-full aspect-square">
-                {/* Mock Dashboard Preview */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-purple-400/20 dark:from-blue-600/20 dark:to-purple-600/20 rounded-2xl transform rotate-3"></div>
-                <div className="absolute inset-0 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-4">
-                  {/* Dashboard Content */}
-                  <div className="flex h-full">
-                    <div className="w-1/4 border-r border-gray-200 dark:border-gray-700">
-                      <div className="space-y-4 p-4">
-                        {[...Array(5)].map((_, i) => (
-                          <div key={i} className="h-8 bg-gray-100 dark:bg-gray-700 rounded-lg"></div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex-1 p-4">
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div className="h-24 bg-blue-50 dark:bg-gray-700 rounded-lg p-4">
-                          <div className="w-1/2 h-3 bg-blue-200 dark:bg-gray-600 rounded mb-2"></div>
-                          <div className="w-3/4 h-6 bg-blue-300 dark:bg-gray-500 rounded"></div>
-                        </div>
-                        <div className="h-24 bg-purple-50 dark:bg-gray-700 rounded-lg p-4">
-                          <div className="w-1/2 h-3 bg-purple-200 dark:bg-gray-600 rounded mb-2"></div>
-                          <div className="w-3/4 h-6 bg-purple-300 dark:bg-gray-500 rounded"></div>
-                        </div>
-                      </div>
-                      <div className="h-64 bg-gray-50 dark:bg-gray-700 rounded-lg"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
+      <HeroSection />
+      
       {/* Benefits Section */}
-      <section id="benefits" className="relative py-20 sm:py-32 overflow-hidden">
-        <div className="absolute inset-0 -z-10">
+      <section id="benefits" className="relative w-full py-20 sm:py-32 overflow-hidden bg-gray-900">
+        <div className="absolute inset-0 -z-10 w-full">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(59,130,246,0.1),rgba(59,130,246,0)_50%)]"></div>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -504,89 +400,6 @@ export default function Home(): React.JSX.Element {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                       </svg>
                     </Link>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="relative py-20 sm:py-32 overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),rgba(59,130,246,0)_50%)]"></div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-base font-semibold text-blue-600 dark:text-blue-400 mb-4">
-              TESTIMONIALS
-            </h2>
-            <h3 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">
-              Trusted by Industry Leaders
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                quote: "GymSync has transformed how we operate. The automation features alone save us countless hours every week.",
-                author: "Sarah Johnson",
-                role: "Fitness Club Owner",
-                image: "/testimonial1.jpg",
-                rating: 5
-              },
-              {
-                quote: "The member engagement features have helped us improve retention rates significantly. Our members love the mobile app.",
-                author: "Michael Chen",
-                role: "Gym Chain Director",
-                image: "/testimonial2.jpg",
-                rating: 5
-              },
-              {
-                quote: "The analytics and reporting features give us invaluable insights into our business performance.",
-                author: "Emma Williams",
-                role: "Studio Manager",
-                image: "/testimonial3.jpg",
-                rating: 5
-              }
-            ].map((testimonial, index) => (
-              <div 
-                key={index}
-                className="relative p-8 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg"
-              >
-                <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-blue-600 to-blue-400 rounded-full opacity-10"></div>
-                
-                <div className="relative">
-                  <svg className="w-12 h-12 text-blue-500/20 mb-6" fill="currentColor" viewBox="0 0 32 32">
-                    <path d="M9.352 4C4.456 7.456 1 13.12 1 19.36c0 5.088 3.072 8.064 6.624 8.064 3.36 0 5.856-2.688 5.856-5.856 0-3.168-2.208-5.472-5.088-5.472-.576 0-1.344.096-1.536.192.48-3.264 3.552-7.104 6.624-9.024L9.352 4zm16.512 0c-4.8 3.456-8.256 9.12-8.256 15.36 0 5.088 3.072 8.064 6.624 8.064 3.264 0 5.856-2.688 5.856-5.856 0-3.168-2.304-5.472-5.184-5.472-.576 0-1.248.096-1.44.192.48-3.264 3.456-7.104 6.528-9.024L25.864 4z" />
-                  </svg>
-
-                  <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
-                    {testimonial.quote}
-                  </p>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center text-white font-bold">
-                        {testimonial.author[0]}
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white">
-                          {testimonial.author}
-                        </h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {testimonial.role}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
-                    </div>
                   </div>
                 </div>
               </div>
