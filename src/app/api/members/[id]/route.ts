@@ -28,7 +28,20 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     // Check if the user has permission to view this member
-    if (userData.role !== 'super-admin' && userData.id !== member.gymId.toString()) {
+    if (userData.role === 'member' && userData.id !== id) {
+      // Members can only view their own data
+      return NextResponse.json(
+        { error: 'Forbidden: You do not have permission to view this member' },
+        { status: 403 }
+      );
+    } else if (userData.role === 'gym-owner' && userData.id !== member.gymId.toString()) {
+      // Gym owners can only view members in their gym
+      return NextResponse.json(
+        { error: 'Forbidden: You do not have permission to view this member' },
+        { status: 403 }
+      );
+    } else if (userData.role !== 'super-admin' && userData.role !== 'member' && userData.role !== 'gym-owner') {
+      // Other roles (besides super-admin) cannot view member data
       return NextResponse.json(
         { error: 'Forbidden: You do not have permission to view this member' },
         { status: 403 }
