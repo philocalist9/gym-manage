@@ -230,13 +230,19 @@ export async function GET(req: NextRequest) {
     }
     
     if (!fitnessGoals) {
+      // If we have a member but no fitness goals, try to estimate a reasonable 
+      // default current weight based on metrics rather than returning 0
+      const estimatedWeight = member ? (
+        member.gender === 'male' ? 75 : 60
+      ) : 70; // Default fallback if no member info is available
+      
       return NextResponse.json(
         { 
-          message: 'No fitness goals found', 
+          message: 'No fitness goals found, using default values', 
           fitnessGoals: {
             primaryGoal: 'General Fitness',
-            currentWeight: 0,
-            targetWeight: 0,
+            currentWeight: estimatedWeight,
+            targetWeight: member?.gender === 'male' ? 70 : 55,
             weeklyWorkoutTarget: 3,
             preferredWorkoutTime: 'Evening',
             dietaryPreferences: []
@@ -245,8 +251,19 @@ export async function GET(req: NextRequest) {
         { status: 200 }
       );
     }
+    
+    // Ensure numeric values are valid (not undefined, null, 0, or NaN)
+    const sanitizedFitnessGoals = {
+      ...fitnessGoals.toObject(),
+      currentWeight: fitnessGoals.currentWeight && !isNaN(fitnessGoals.currentWeight) && fitnessGoals.currentWeight > 0 
+        ? fitnessGoals.currentWeight 
+        : member?.gender === 'male' ? 75 : 60,
+      targetWeight: fitnessGoals.targetWeight && !isNaN(fitnessGoals.targetWeight) && fitnessGoals.targetWeight > 0 
+        ? fitnessGoals.targetWeight 
+        : member?.gender === 'male' ? 70 : 55,
+    };
 
-    return NextResponse.json({ fitnessGoals }, { status: 200 });
+    return NextResponse.json({ fitnessGoals: sanitizedFitnessGoals }, { status: 200 });
   } catch (error: any) {
     console.error('Get fitness goals error:', error);
     return NextResponse.json(

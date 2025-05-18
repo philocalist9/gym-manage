@@ -15,6 +15,7 @@ import {
   XCircle,
   Circle
 } from 'lucide-react';
+import { formatShortDate, formatChartDate } from '@/app/utils/date-formatting';
 
 interface Goal {
   id: string;
@@ -171,7 +172,7 @@ export default function GoalTracker() {
                     <div className="flex items-center gap-4 mt-1">
                       <div className="flex items-center gap-2 text-gray-400">
                         <Calendar className="w-4 h-4" />
-                        <span>Due {new Date(goal.deadline).toLocaleDateString()}</span>
+                        <span>Due {formatShortDate(goal.deadline)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-gray-400">
                         <Trophy className="w-4 h-4" />
@@ -207,7 +208,7 @@ export default function GoalTracker() {
                   {goal.checkIns.map((checkIn, index) => (
                     <div key={index} className="flex flex-col items-center">
                       <div className="text-xs text-gray-400 mb-1">
-                        {new Date(checkIn.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                        {formatChartDate(checkIn.date)}
                       </div>
                       <div
                         className="w-8 bg-blue-600 rounded-t"

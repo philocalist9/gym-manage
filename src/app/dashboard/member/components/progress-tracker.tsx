@@ -36,6 +36,7 @@ export default function ProgressTracker({ data }: ProgressTrackerProps) {
     };
   };
 
+  // Use the actual current weight from data
   const stats = [
     {
       title: 'Current Weight',
