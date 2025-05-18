@@ -20,6 +20,7 @@ import {
   Home,
   UserCheck
 } from 'lucide-react';
+import Notification from '@/app/components/ui/notification';
 
 interface MemberProfile {
   personalInfo: {
@@ -43,16 +44,9 @@ interface MemberProfile {
     status: string;
     trainer: string;
   };
-  healthMetrics: {
-    height: number;
-    weight: number;
-    bmi: number;
-    bodyFat: number;
-    bloodPressure: string;
-    restingHeartRate: number;
-  };
   fitnessGoals: {
     primaryGoal: string;
+    currentWeight: number;
     targetWeight: number;
     weeklyWorkoutTarget: number;
     preferredWorkoutTime: string;
@@ -69,7 +63,13 @@ interface MemberProfile {
 export default function MemberProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false); // State for save operation
   const [error, setError] = useState<string | null>(null);
+  const [notification, setNotification] = useState({
+    show: false,
+    type: 'success' as 'success' | 'error' | 'warning' | 'info',
+    message: ''
+  });
   const [profile, setProfile] = useState<MemberProfile>({
     personalInfo: {
       name: "Rahul Sharma",
@@ -92,16 +92,9 @@ export default function MemberProfilePage() {
       status: "Active",
       trainer: "Virat Kohli"
     },
-    healthMetrics: {
-      height: 175,
-      weight: 75,
-      bmi: 24.5,
-      bodyFat: 18,
-      bloodPressure: "120/80",
-      restingHeartRate: 68
-    },
     fitnessGoals: {
       primaryGoal: "Weight Loss",
+      currentWeight: 75,
       targetWeight: 70,
       weeklyWorkoutTarget: 5,
       preferredWorkoutTime: "Morning",
@@ -115,16 +108,15 @@ export default function MemberProfilePage() {
     }
   });
   
-  // Fetch member data from the API
-  useEffect(() => {
-    const fetchMemberData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // Fetch current user data to get member ID
-        const userResponse = await fetch('/api/auth/user');
-        if (!userResponse.ok) {
+  // Function to fetch member data
+  const fetchMemberData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Fetch current user data to get member ID
+      const userResponse = await fetch('/api/auth/user');
+      if (!userResponse.ok) {
           throw new Error('Failed to fetch user data');
         }
         
@@ -147,6 +139,90 @@ export default function MemberProfilePage() {
         
         const memberData = await memberResponse.json();
         const member = memberData.member;
+        
+        // Initialize fitness goals with default values from the current profile
+        let fitnessGoals = {
+          primaryGoal: profile.fitnessGoals.primaryGoal || 'General Fitness',
+          currentWeight: validateNumeric(profile.fitnessGoals.currentWeight),
+          targetWeight: validateNumeric(profile.fitnessGoals.targetWeight),
+          weeklyWorkoutTarget: validateNumeric(profile.fitnessGoals.weeklyWorkoutTarget, 3),
+          preferredWorkoutTime: profile.fitnessGoals.preferredWorkoutTime || 'Evening',
+          dietaryPreferences: Array.isArray(profile.fitnessGoals.dietaryPreferences) ? profile.fitnessGoals.dietaryPreferences : []
+        };
+        
+        // Check if the Member document has fitness goals data
+        if (member.fitnessGoals) {
+          console.log('Found fitness goals in Member document:', member.fitnessGoals);
+          fitnessGoals = {
+            primaryGoal: member.fitnessGoals.primaryGoal || fitnessGoals.primaryGoal,
+            currentWeight: validateNumeric(member.fitnessGoals.currentWeight, fitnessGoals.currentWeight),
+            targetWeight: validateNumeric(member.fitnessGoals.targetWeight, fitnessGoals.targetWeight),
+            weeklyWorkoutTarget: validateNumeric(member.fitnessGoals.weeklyWorkoutTarget, fitnessGoals.weeklyWorkoutTarget),
+            preferredWorkoutTime: member.fitnessGoals.preferredWorkoutTime || fitnessGoals.preferredWorkoutTime,
+            dietaryPreferences: Array.isArray(member.fitnessGoals.dietaryPreferences) 
+              ? member.fitnessGoals.dietaryPreferences 
+              : fitnessGoals.dietaryPreferences
+          };
+        }
+        
+        // Try to load fitness goals from the dedicated endpoint
+        let fitnessGoalsFromDedicatedAPI = null;
+        try {
+          console.log('Attempting to load fitness goals from dedicated endpoint');
+          const fitnessGoalsResponse = await fetch('/api/members/fitness-goals');
+          
+          if (fitnessGoalsResponse.ok) {
+            const fitnessGoalsData = await fitnessGoalsResponse.json();
+            if (fitnessGoalsData.fitnessGoals) {
+              console.log('Found fitness goals in dedicated collection:', fitnessGoalsData.fitnessGoals);
+              fitnessGoalsFromDedicatedAPI = fitnessGoalsData.fitnessGoals;
+              
+              // Use the dedicated FitnessGoal collection data as it should be the source of truth
+              fitnessGoals = {
+                primaryGoal: fitnessGoalsFromDedicatedAPI.primaryGoal || fitnessGoals.primaryGoal,
+                currentWeight: validateNumeric(fitnessGoalsFromDedicatedAPI.currentWeight, fitnessGoals.currentWeight),
+                targetWeight: validateNumeric(fitnessGoalsFromDedicatedAPI.targetWeight, fitnessGoals.targetWeight),
+                weeklyWorkoutTarget: validateNumeric(fitnessGoalsFromDedicatedAPI.weeklyWorkoutTarget, fitnessGoals.weeklyWorkoutTarget),
+                preferredWorkoutTime: fitnessGoalsFromDedicatedAPI.preferredWorkoutTime || fitnessGoals.preferredWorkoutTime,
+                dietaryPreferences: Array.isArray(fitnessGoalsFromDedicatedAPI.dietaryPreferences) 
+                  ? fitnessGoalsFromDedicatedAPI.dietaryPreferences 
+                  : fitnessGoals.dietaryPreferences
+              };
+              console.log('Fitness goals loaded successfully from dedicated endpoint:', fitnessGoals);
+            } else {
+              console.warn('No fitness goals found in dedicated endpoint response');
+            }
+          } else {
+            console.warn('Failed to load fitness goals from dedicated endpoint, status:', fitnessGoalsResponse.status);
+            const errorText = await fitnessGoalsResponse.text().catch(() => 'Could not read response body');
+            console.warn('Error response:', errorText);
+          }
+        } catch (fitnessGoalsError) {
+          console.error('Error fetching fitness goals from dedicated API:', fitnessGoalsError);
+          // Continue with data from Member document or defaults
+        }
+        
+        // If we couldn't get data from dedicated API but have data in Member document, and no dedicated record exists,
+        // we should create one to maintain consistency
+        if (!fitnessGoalsFromDedicatedAPI && member.fitnessGoals) {
+          try {
+            console.log('Creating fitness goals record in dedicated collection from Member data');
+            // Make a POST request to create the dedicated record based on Member data
+            const syncResponse = await fetch('/api/members/fitness-goals', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fitnessGoals })
+            });
+            
+            if (syncResponse.ok) {
+              console.log('Successfully synced Member fitness goals to dedicated collection');
+            } else {
+              console.warn('Failed to sync fitness goals to dedicated collection');
+            }
+          } catch (syncError) {
+            console.error('Error syncing fitness goals to dedicated collection:', syncError);
+          }
+        }
         
         // Fetch gym data based on member's gymId
         let gymName = 'N/A';
@@ -302,27 +378,38 @@ export default function MemberProfilePage() {
         }
         
         // Update profile state with fetched data
-        setProfile(prevProfile => ({
-          ...prevProfile,
-          personalInfo: {
-            ...prevProfile.personalInfo,
-            name: member.name || prevProfile.personalInfo.name,
-            email: member.email || prevProfile.personalInfo.email,
-            phone: member.phone || prevProfile.personalInfo.phone,
-            gymName,
-            gymAddress,
-            trainerName
-          },
-          membershipDetails: {
-            ...prevProfile.membershipDetails,
-            memberId: member.memberNumber || prevProfile.membershipDetails.memberId,
-            plan: member.membershipType || prevProfile.membershipDetails.plan,
-            status: member.status || prevProfile.membershipDetails.status,
-            startDate: member.joiningDate ? new Date(member.joiningDate).toISOString().split('T')[0] : prevProfile.membershipDetails.startDate,
-            endDate: member.nextPayment ? new Date(member.nextPayment).toISOString().split('T')[0] : prevProfile.membershipDetails.endDate,
-            trainer: trainerName
-          }
-        }));
+        setProfile(prevProfile => {
+          const updatedProfile = {
+            ...prevProfile,
+            personalInfo: {
+              ...prevProfile.personalInfo,
+              name: member.name || prevProfile.personalInfo.name,
+              email: member.email || prevProfile.personalInfo.email,
+              phone: member.phone || prevProfile.personalInfo.phone,
+              gymName,
+              gymAddress,
+              trainerName
+            },
+            membershipDetails: {
+              ...prevProfile.membershipDetails,
+              memberId: member.memberNumber || prevProfile.membershipDetails.memberId,
+              plan: member.membershipType || prevProfile.membershipDetails.plan,
+              status: member.status || prevProfile.membershipDetails.status,
+              startDate: member.joiningDate ? new Date(member.joiningDate).toISOString().split('T')[0] : prevProfile.membershipDetails.startDate,
+              endDate: member.nextPayment ? new Date(member.nextPayment).toISOString().split('T')[0] : prevProfile.membershipDetails.endDate,
+              trainer: trainerName
+            },
+            fitnessGoals: {
+              ...prevProfile.fitnessGoals,
+              ...fitnessGoals
+            }
+          };
+          
+          // Debug info
+          console.log('Updated profile with fitness goals:', updatedProfile.fitnessGoals);
+          
+          return updatedProfile;
+        });
       } catch (err: any) {
         console.error('Error fetching member data:', err);
         setError(err.message || 'Failed to load profile data');
@@ -330,9 +417,13 @@ export default function MemberProfilePage() {
         setIsLoading(false);
       }
     };
-    
+  
+  // Use fetchMemberData in useEffect
+  useEffect(() => {
     fetchMemberData();
   }, []);
+  
+  // Helper function for refreshing data
   
   // Retry loading data if there was an error
   const handleRetry = () => {
@@ -342,9 +433,106 @@ export default function MemberProfilePage() {
     setProfile(prev => ({...prev}));
   };
 
-  const handleSaveProfile = () => {
-    setIsEditing(false);
-    // TODO: Implement profile update API call
+  // Helper function to validate numeric values
+  const validateNumeric = (value: any, defaultValue = 0): number => {
+    return typeof value === 'number' && !isNaN(value) ? value : defaultValue;
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      setIsSaving(true);  // Use isSaving state instead of isLoading
+      
+      // Save personal information
+      const personalInfoData = {
+        personalInfo: {
+          name: profile.personalInfo.name,
+          phone: profile.personalInfo.phone,
+          emergencyContact: profile.personalInfo.emergencyContact
+        }
+      };
+      
+      // Send personal info update to the profile API
+      const profileResponse = await fetch('/api/members/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(personalInfoData)
+      });
+      
+      if (!profileResponse.ok) {
+        const errorData = await profileResponse.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to update profile');
+      }
+      
+      // Validate fitness goals data before sending
+      const validatedFitnessGoals = {
+        primaryGoal: profile.fitnessGoals.primaryGoal || 'General Fitness',
+        currentWeight: validateNumeric(profile.fitnessGoals.currentWeight),
+        targetWeight: validateNumeric(profile.fitnessGoals.targetWeight),
+        weeklyWorkoutTarget: validateNumeric(profile.fitnessGoals.weeklyWorkoutTarget, 3),
+        preferredWorkoutTime: profile.fitnessGoals.preferredWorkoutTime,
+        dietaryPreferences: Array.isArray(profile.fitnessGoals.dietaryPreferences) 
+          ? profile.fitnessGoals.dietaryPreferences 
+          : []
+      };
+      
+      console.log('Sending validated fitness goals data:', validatedFitnessGoals);
+      
+      // Save fitness goals to the dedicated fitness goals API
+      const fitnessGoalsData = {
+        fitnessGoals: validatedFitnessGoals
+      };
+      
+      const fitnessGoalsResponse = await fetch('/api/members/fitness-goals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(fitnessGoalsData)
+      });
+      
+      if (!fitnessGoalsResponse.ok) {
+        const errorData = await fitnessGoalsResponse.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Failed to save fitness goals:', errorData);
+        throw new Error(errorData.error || 'Failed to save fitness goals');
+      }
+      
+      const fitnessGoalsResult = await fitnessGoalsResponse.json();
+      console.log('Fitness goals saved successfully:', fitnessGoalsResult);
+      
+      // Show success message
+      setNotification({
+        show: true,
+        type: 'success',
+        message: 'Profile updated successfully'
+      });
+      
+      // Wait a moment before refreshing data to ensure the database has been updated
+      setTimeout(async () => {
+        // Refresh the data to show updated values
+        try {
+          await fetchMemberData();
+          console.log('Profile data refreshed after save');
+        } catch (refreshError) {
+          console.error('Error refreshing data after save:', refreshError);
+        }
+      }, 500);
+      
+      setIsEditing(false);
+    } catch (err: any) {
+      console.error('Error saving profile:', err);
+      setError(err.message || 'Failed to save profile changes');
+      
+      // Show error notification
+      setNotification({
+        show: true,
+        type: 'error',
+        message: err.message || 'Failed to save profile changes'
+      });
+    } finally {
+      setIsSaving(false); // Use isSaving state instead of isLoading
+    }
   };
 
   if (isLoading) {
@@ -373,6 +561,15 @@ export default function MemberProfilePage() {
               Loading data...
             </div>
           )}
+          {isSaving && (
+            <div className="text-sm text-green-600 dark:text-green-400 animate-pulse flex items-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Saving changes...
+            </div>
+          )}
           {error && (
             <div className="flex items-center gap-2">
               <div className="text-sm text-red-600 dark:text-red-400">
@@ -386,15 +583,16 @@ export default function MemberProfilePage() {
               </button>
             </div>
           )}
-          {!isLoading && !error && (
+          {!isLoading && !isSaving && !error && (
             isEditing ? (
               <>
                 <button
                   onClick={handleSaveProfile}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1"
+                  disabled={isSaving}
+                  className={`px-4 py-2 ${isSaving ? 'bg-gray-500' : 'bg-green-600 hover:bg-green-700'} text-white rounded-lg transition-colors flex items-center gap-1`}
                 >
                   <Save className="w-4 h-4" />
-                  Save Changes
+                  {isSaving ? 'Saving...' : 'Save Changes'}
                 </button>
                 <button
                   onClick={() => setIsEditing(false)}
@@ -443,25 +641,25 @@ export default function MemberProfilePage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {profile.achievements.workoutsCompleted}
+                  {profile.achievements.workoutsCompleted || 0}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Workouts</div>
               </div>
               <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {profile.achievements.daysStreak}
+                  {profile.achievements.daysStreak || 0}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Days Streak</div>
               </div>
               <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                  {profile.achievements.personalRecords}
+                  {profile.achievements.personalRecords || 0}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Records</div>
               </div>
               <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                  {profile.achievements.weightLost}kg
+                  {(profile.achievements.weightLost || 0)}kg
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Weight Lost</div>
               </div>
@@ -622,40 +820,6 @@ export default function MemberProfilePage() {
             </div>
           </div>
 
-          {/* Health Metrics */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Health Metrics</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Scale className="w-5 h-5 text-blue-600" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Weight</span>
-                </div>
-                <div className="mt-2 text-xl font-semibold text-gray-900 dark:text-white">
-                  {profile.healthMetrics.weight} kg
-                </div>
-              </div>
-              <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-green-600" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">BMI</span>
-                </div>
-                <div className="mt-2 text-xl font-semibold text-gray-900 dark:text-white">
-                  {profile.healthMetrics.bmi}
-                </div>
-              </div>
-              <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-red-600" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Heart Rate</span>
-                </div>
-                <div className="mt-2 text-xl font-semibold text-gray-900 dark:text-white">
-                  {profile.healthMetrics.restingHeartRate} bpm
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Fitness Goals */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Fitness Goals</h3>
@@ -681,15 +845,42 @@ export default function MemberProfilePage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Target Weight
+                  <div className="flex items-center gap-1">
+                    <Scale className="w-4 h-4 text-blue-500" />
+                    <span>Current Weight (kg)</span>
+                  </div>
                 </label>
                 <input
                   type="number"
-                  value={profile.fitnessGoals.targetWeight}
-                  onChange={(e) => setProfile({
-                    ...profile,
-                    fitnessGoals: { ...profile.fitnessGoals, targetWeight: parseInt(e.target.value) }
-                  })}
+                  value={profile.fitnessGoals.currentWeight === undefined || isNaN(profile.fitnessGoals.currentWeight) ? 0 : profile.fitnessGoals.currentWeight}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                    setProfile({
+                      ...profile,
+                      fitnessGoals: { ...profile.fitnessGoals, currentWeight: isNaN(value) ? 0 : value }
+                    });
+                  }}
+                  disabled={!isEditing}
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <div className="flex items-center gap-1">
+                    <Target className="w-4 h-4 text-green-500" />
+                    <span>Target Weight (kg)</span>
+                  </div>
+                </label>
+                <input
+                  type="number"
+                  value={profile.fitnessGoals.targetWeight === undefined || isNaN(profile.fitnessGoals.targetWeight) ? 0 : profile.fitnessGoals.targetWeight}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                    setProfile({
+                      ...profile,
+                      fitnessGoals: { ...profile.fitnessGoals, targetWeight: isNaN(value) ? 0 : value }
+                    });
+                  }}
                   disabled={!isEditing}
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800"
                 />
@@ -700,11 +891,14 @@ export default function MemberProfilePage() {
                 </label>
                 <input
                   type="number"
-                  value={profile.fitnessGoals.weeklyWorkoutTarget}
-                  onChange={(e) => setProfile({
-                    ...profile,
-                    fitnessGoals: { ...profile.fitnessGoals, weeklyWorkoutTarget: parseInt(e.target.value) }
-                  })}
+                  value={profile.fitnessGoals.weeklyWorkoutTarget === undefined || isNaN(profile.fitnessGoals.weeklyWorkoutTarget) ? 0 : profile.fitnessGoals.weeklyWorkoutTarget}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                    setProfile({
+                      ...profile,
+                      fitnessGoals: { ...profile.fitnessGoals, weeklyWorkoutTarget: isNaN(value) ? 0 : value }
+                    });
+                  }}
                   disabled={!isEditing}
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800"
                 />
@@ -750,6 +944,18 @@ export default function MemberProfilePage() {
           )}
         </div>
       </div>
+
+      {/* Notification Component */}
+      {notification.show && (
+        <div className="fixed top-4 right-4 z-50">
+          <Notification
+            type={notification.type}
+            message={notification.message}
+            show={notification.show}
+            onClose={() => setNotification(prev => ({ ...prev, show: false }))}
+          />
+        </div>
+      )}
     </div>
   );
 }

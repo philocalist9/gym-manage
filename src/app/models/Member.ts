@@ -15,6 +15,14 @@ export interface IMember extends Document {
   gymId: mongoose.Types.ObjectId | string; // Reference to the gym this member belongs to
   role: string; // Will be 'member'
   feeAmount: number; // Fee amount in Indian Rupees
+  fitnessGoals?: {
+    primaryGoal: string;
+    currentWeight: number;
+    targetWeight: number;
+    weeklyWorkoutTarget: number;
+    preferredWorkoutTime: string;
+    dietaryPreferences: string[];
+  };
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
@@ -82,6 +90,34 @@ const MemberSchema: Schema = new Schema({
     type: Number,
     default: 1000,  // Default fee of 1000 Indian Rupees
     min: 0
+  },
+  fitnessGoals: {
+    primaryGoal: {
+      type: String,
+      enum: ['Weight Loss', 'Muscle Gain', 'Strength Training', 'General Fitness'],
+      default: 'General Fitness'
+    },
+    currentWeight: {
+      type: Number,
+      min: 0
+    },
+    targetWeight: {
+      type: Number,
+      min: 0
+    },
+    weeklyWorkoutTarget: {
+      type: Number,
+      default: 3,
+      min: 0
+    },
+    preferredWorkoutTime: {
+      type: String,
+      enum: ['Morning', 'Afternoon', 'Evening', 'Night'],
+      default: 'Evening'
+    },
+    dietaryPreferences: [{
+      type: String
+    }]
   }
 }, { timestamps: true });
 
