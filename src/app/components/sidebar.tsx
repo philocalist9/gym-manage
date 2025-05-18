@@ -185,16 +185,14 @@ export default function Sidebar({ isOpen = false, toggleSidebar }: SidebarProps)
   return (
     <aside 
       className={`fixed top-16 left-0 h-[calc(100vh-4rem)] bg-[#151C2C] border-r border-gray-800 z-40 transition-all duration-300 
-        overflow-y-auto md:w-64 w-64 md:translate-x-0 shadow-lg ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+        overflow-y-auto md:w-64 w-72 md:translate-x-0 shadow-lg ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      <div className="p-6">
-        {/* Logo and site header removed from sidebar since it's now in navbar */}
-      </div>
+      {/* Removed unnecessary padding div */}
 
-      <nav className="px-3 mt-2 overflow-y-auto max-h-[calc(100vh-200px)]">
+      <nav className="px-4 py-4 overflow-y-auto max-h-[calc(100vh-7rem)]">
         {menuItems.map((item) => (
           <div key={item.href} className="relative group">
             <Link
@@ -226,7 +224,7 @@ export default function Sidebar({ isOpen = false, toggleSidebar }: SidebarProps)
         ))}
       </nav>
 
-      <div className="absolute bottom-8 px-4 w-full space-y-1">
+      <div className="sticky bottom-0 px-4 py-3 w-full space-y-1 mt-4 bg-[#151C2C] border-t border-gray-800">
         {isMemberDashboard && memberBottomMenu.map((item) => (
           <Link
             key={item.href}
@@ -250,7 +248,7 @@ export default function Sidebar({ isOpen = false, toggleSidebar }: SidebarProps)
         
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:text-red-300 hover:bg-[#1A2234] mt-4 w-full text-left"
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:text-red-300 hover:bg-[#1A2234] mt-2 w-full text-left"
           disabled={isLoggingOut}
         >
           <LogOut className="w-5 h-5" strokeWidth={1.5} />

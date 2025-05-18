@@ -32,12 +32,12 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-[#0B101B] text-gray-100 flex flex-col">
-      {/* Navbar component - fixed at top */}
+      {/* Navbar component - fixed at top with proper z-index */}
       <Navbar toggleSidebar={toggleSidebar} isOpen={sidebarOpen} />
       
       {/* Layout container with sidebar and content */}
       <div className="flex flex-1 mt-16">
-        {/* Sidebar component - fixed position */}
+        {/* Sidebar component - fixed position, optimized for mobile */}
         <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
 
         {/* Overlay for mobile when sidebar is open */}
@@ -49,9 +49,9 @@ export default function DashboardLayout({
           ></div>
         )}
 
-        {/* Main content area - responsive padding and margin */}
+        {/* Main content area - responsive padding and improved margin handling */}
         <div className="flex-1 md:ml-64 transition-all duration-300 w-full">
-          <main className="px-3 md:px-6 py-2 md:py-4 min-h-[calc(100vh-4rem)]">
+          <main className="px-2 sm:px-3 md:px-6 py-3 md:py-4 min-h-[calc(100vh-4rem)]">
             {/* Security components rendered in client */}
             <ClientSecurityWrapper />
             {children}

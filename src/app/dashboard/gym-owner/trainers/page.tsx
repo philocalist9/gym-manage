@@ -148,13 +148,13 @@ export default function TrainersPage() {
   };
 
   return (
-    <div className="p-8 bg-[#0B101B] min-h-screen">
+    <div className="pb-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-semibold text-white">Trainers</h1>
+      <div className="flex items-center justify-between mb-4 md:mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold">Trainers</h1>
         <button 
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base"
         >
           <Plus className="w-5 h-5" />
           <span>Add New Trainer</span>

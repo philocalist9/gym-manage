@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     await connectDB();
     
     const body = await req.json();
-    const { name, email, password, membershipType, trainer, status, joiningDate, nextPayment } = body;
+    const { name, email, password, membershipType, trainer, status, joiningDate, nextPayment, feeAmount } = body;
 
     // Validate required fields
     if (!name || !email || !password || !membershipType) {
@@ -57,7 +57,8 @@ export async function POST(req: NextRequest) {
       nextPayment: nextPayment || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Default to 30 days from now
       attendance: 100,
       gymId: userData.id, // Set the gym ID from the logged-in user
-      role: 'member'
+      role: 'member',
+      feeAmount: feeAmount || 1000 // Default fee amount of 1000 Indian Rupees if not provided
     });
 
     await member.save();
@@ -74,6 +75,7 @@ export async function POST(req: NextRequest) {
       nextPayment: member.nextPayment,
       trainer: member.trainer,
       attendance: member.attendance,
+      feeAmount: member.feeAmount,
     };
 
     return NextResponse.json(

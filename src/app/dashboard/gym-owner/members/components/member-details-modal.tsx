@@ -41,6 +41,7 @@ interface Member {
   nextPayment: string;
   trainer: string | null;
   attendance: number;
+  feeAmount: number;
 }
 
 export default function MemberDetailsModal({ isOpen, onClose, member }: MemberDetailsModalProps) {
@@ -197,6 +198,13 @@ export default function MemberDetailsModal({ isOpen, onClose, member }: MemberDe
               <p className="text-sm text-gray-400 mb-1">Attendance Rate</p>
               <p className="text-gray-200 font-medium">{member.attendance}%</p>
             </div>
+          </div>
+
+          <div className="bg-[#1A2234] p-4 rounded-lg">
+            <p className="text-sm text-gray-400 mb-1">Fee Amount</p>
+            <p className="text-gray-200 font-medium">
+              <span className="text-green-400">₹</span>{(member.feeAmount || 1000).toLocaleString('en-IN')}
+            </p>
           </div>
         </div>
 

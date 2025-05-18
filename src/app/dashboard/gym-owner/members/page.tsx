@@ -33,6 +33,7 @@ interface Member {
   nextPayment: string;
   trainer: string | null;
   attendance: number;
+  feeAmount: number; // Fee amount in Indian Rupees
 }
 
 export default function MembersPage() {
@@ -78,6 +79,7 @@ export default function MembersPage() {
           nextPayment: new Date(member.nextPayment).toISOString(),
           trainer: member.trainer,
           attendance: member.attendance,
+          feeAmount: member.feeAmount || 1000, // Include fee amount with fallback
         })));
         
         // Also fetch trainers to map trainer IDs to names
@@ -151,6 +153,12 @@ export default function MembersPage() {
         const dateA = new Date(a.nextPayment).getTime();
         const dateB = new Date(b.nextPayment).getTime();
         return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
+      }
+      
+      if (sortField === "feeAmount") {
+        return sortDirection === "asc" 
+          ? a.feeAmount - b.feeAmount 
+          : b.feeAmount - a.feeAmount;
       }
       
       return 0;
@@ -250,22 +258,22 @@ export default function MembersPage() {
   };
 
   return (
-    <div className="p-8 bg-[#0B101B] min-h-screen">
+    <div className="pb-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-semibold text-white">Members</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 md:mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold">Members</h1>
         <button 
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base self-start sm:self-auto"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-4 h-4 md:w-5 md:h-5" />
           <span>Add New Member</span>
         </button>
       </div>
 
       {/* Payment Summary Cards */}
       {!isLoading && members.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
           <div className="bg-[#151C2C] border border-yellow-500/20 rounded-lg p-4 flex items-center">
             <div className="w-12 h-12 bg-yellow-500/10 rounded-lg flex items-center justify-center text-yellow-500 mr-3">
               <Clock className="w-6 h-6" />
@@ -319,26 +327,26 @@ export default function MembersPage() {
       )}
 
       {/* Filter and Search */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row gap-3 mb-4 md:mb-5">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             type="text"
             placeholder="Search members..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-[#151C2C] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            className="w-full pl-9 pr-3 py-2 text-sm bg-[#151C2C] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-400 focus:outline-none focus:border-blue-500"
           />
         </div>
         
         {/* Filters */}
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-[#151C2C] border border-gray-800 rounded-lg text-gray-200 appearance-none focus:outline-none focus:border-blue-500"
+              className="pl-9 pr-3 py-2 text-sm bg-[#151C2C] border border-gray-800 rounded-lg text-gray-200 appearance-none focus:outline-none focus:border-blue-500"
             >
               <option value="all">All Statuses</option>
               <option value="Active">Active</option>
@@ -348,11 +356,11 @@ export default function MembersPage() {
           </div>
           
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <select
               value={membershipFilter}
               onChange={(e) => setMembershipFilter(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-[#151C2C] border border-gray-800 rounded-lg text-gray-200 appearance-none focus:outline-none focus:border-blue-500"
+              className="pl-9 pr-3 py-2 text-sm bg-[#151C2C] border border-gray-800 rounded-lg text-gray-200 appearance-none focus:outline-none focus:border-blue-500"
             >
               <option value="all">All Memberships</option>
               <option value="Basic">Basic</option>
@@ -362,11 +370,11 @@ export default function MembersPage() {
           </div>
 
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <select
               value={paymentFilter}
               onChange={(e) => setPaymentFilter(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-[#151C2C] border border-gray-800 rounded-lg text-gray-200 appearance-none focus:outline-none focus:border-blue-500"
+              className="pl-9 pr-3 py-2 text-sm bg-[#151C2C] border border-gray-800 rounded-lg text-gray-200 appearance-none focus:outline-none focus:border-blue-500"
             >
               <option value="all">All Payments</option>
               <option value="overdue">Overdue</option>
@@ -439,6 +447,19 @@ export default function MembersPage() {
                   Next Payment {sortField === "nextPayment" && (sortDirection === "asc" ? "↑" : "↓")}
                 </th>
                 <th className="pb-4 text-left text-gray-400 font-medium">Trainer</th>
+                <th 
+                  className="pb-4 text-left text-gray-400 font-medium cursor-pointer hover:text-white"
+                  onClick={() => {
+                    if (sortField === "feeAmount") {
+                      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+                    } else {
+                      setSortField("feeAmount");
+                      setSortDirection("asc");
+                    }
+                  }}
+                >
+                  Fee (₹) {sortField === "feeAmount" && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
                 <th className="pb-4 text-right text-gray-400 font-medium">Actions</th>
               </tr>
             </thead>
@@ -512,6 +533,9 @@ export default function MembersPage() {
                   <td className="py-4 text-gray-300">
                     {member.trainer && trainerNames[member.trainer] ? 
                       trainerNames[member.trainer] : 'No Trainer'}
+                  </td>
+                  <td className="py-4 text-gray-300">
+                    <span className="font-medium">₹{member.feeAmount?.toLocaleString('en-IN') || '1,000'}</span>
                   </td>
                   <td className="py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
                     <button 

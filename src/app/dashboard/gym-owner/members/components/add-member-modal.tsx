@@ -14,13 +14,14 @@ interface Member {
   name: string;
   email: string;
   password: string;
-  memberNumber: string; // Add this field
+  memberNumber: string;
   membershipType: "Basic" | "Premium" | "VIP";
   status: "Active" | "Inactive" | "Pending";
   joiningDate: string;
   nextPayment: string;
   trainer: string;
   attendance: number;
+  feeAmount: number; // Fee amount in Indian Rupees
 }
 
 interface Trainer {
@@ -37,10 +38,23 @@ export default function AddMemberModal({ isOpen, onClose, onAdd }: AddMemberModa
     trainer: "",
     joiningDate: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
     nextPayment: "", // Will be calculated based on joining date
+    feeAmount: 1000, // Default fee amount in Indian Rupees
   });
   const [loading, setLoading] = useState(false);
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  // Check if on mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Fetch trainers for the dropdown
   useEffect(() => {
@@ -80,6 +94,7 @@ export default function AddMemberModal({ isOpen, onClose, onAdd }: AddMemberModa
         joiningDate: currentDate.toISOString(),
         nextPayment: nextMonth.toISOString(),
         attendance: 100, // Initial attendance rate
+        feeAmount: formData.feeAmount // Include the fee amount
       });
 
       setFormData({
@@ -90,6 +105,7 @@ export default function AddMemberModal({ isOpen, onClose, onAdd }: AddMemberModa
         trainer: "",
         joiningDate: new Date().toISOString().split('T')[0],
         nextPayment: "",
+        feeAmount: 1000,
       });
       
       onClose();
@@ -103,44 +119,50 @@ export default function AddMemberModal({ isOpen, onClose, onAdd }: AddMemberModa
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-      <div className="bg-[#151C2C] rounded-xl w-full max-w-lg p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-white">Add New Member</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-[#1A2234] rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-400" />
-          </button>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-[#151C2C] rounded-xl w-full max-w-lg my-8 max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-[#151C2C] p-6 pb-3 z-10 border-b border-gray-800">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-white">Add New Member</h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-[#1A2234] rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
         </div>
+        
+        <div className="p-6 pt-3">
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Name
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-                className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                  className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                />
+              </div>
             </div>
 
             <div>
@@ -161,25 +183,46 @@ export default function AddMemberModal({ isOpen, onClose, onAdd }: AddMemberModa
                 Member Number
               </label>
               <div className="w-full px-4 py-2 bg-[#131826] border border-gray-800 rounded-lg text-gray-400 flex items-center">
-                <span>Auto-generated 6-digit number</span>
+                <span className="text-sm">Auto-generated 6-digit number</span>
               </div>
               <p className="mt-1 text-xs text-gray-500">A unique 6-digit number will be assigned automatically</p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Membership Type
-              </label>
-              <select
-                value={formData.membershipType}
-                onChange={(e) => setFormData({ ...formData, membershipType: e.target.value as "Basic" | "Premium" | "VIP" })}
-                required
-                className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 focus:outline-none focus:border-blue-500"
-              >
-                <option value="Basic">Basic</option>
-                <option value="Premium">Premium</option>
-                <option value="VIP">VIP</option>
-              </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Membership Type
+                </label>
+                <select
+                  value={formData.membershipType}
+                  onChange={(e) => setFormData({ ...formData, membershipType: e.target.value as "Basic" | "Premium" | "VIP" })}
+                  required
+                  className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 focus:outline-none focus:border-blue-500"
+                >
+                  <option value="Basic">Basic</option>
+                  <option value="Premium">Premium</option>
+                  <option value="VIP">VIP</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Fee Amount (₹)
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">₹</span>
+                  <input
+                    type="number"
+                    value={formData.feeAmount}
+                    onChange={(e) => setFormData({ ...formData, feeAmount: Number(e.target.value) })}
+                    required
+                    min="0"
+                    placeholder="1000"
+                    className="w-full px-4 py-2 pl-8 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">Enter fee amount in Indian Rupees (₹)</p>
+              </div>
             </div>
 
             <div>
@@ -200,54 +243,63 @@ export default function AddMemberModal({ isOpen, onClose, onAdd }: AddMemberModa
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Joining Date
-              </label>
-              <input
-                type="date"
-                value={formData.joiningDate}
-                onChange={(e) => {
-                  // Update joining date and calculate next payment date (1 month later)
-                  const joiningDate = e.target.value;
-                  const nextPaymentDate = new Date(joiningDate);
-                  nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
-                  
-                  setFormData({ 
-                    ...formData, 
-                    joiningDate: joiningDate,
-                    nextPayment: nextPaymentDate.toISOString().split('T')[0]
-                  });
-                }}
-                className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 focus:outline-none focus:border-blue-500"
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Joining Date
+                </label>
+                <input
+                  type="date"
+                  value={formData.joiningDate}
+                  onChange={(e) => {
+                    // Update joining date and calculate next payment date (1 month later)
+                    const joiningDate = e.target.value;
+                    const nextPaymentDate = new Date(joiningDate);
+                    nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
+                    
+                    setFormData({ 
+                      ...formData, 
+                      joiningDate: joiningDate,
+                      nextPayment: nextPaymentDate.toISOString().split('T')[0]
+                    });
+                  }}
+                  className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 focus:outline-none focus:border-blue-500"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                Next Payment Date
-              </label>
-              <input
-                type="date"
-                value={formData.nextPayment}
-                onChange={(e) => setFormData({ ...formData, nextPayment: e.target.value })}
-                className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 focus:outline-none focus:border-blue-500"
-              />
-              <p className="mt-1 text-xs text-gray-500">By default, 1 month after joining date</p>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Next Payment Date
+                </label>
+                <input
+                  type="date"
+                  value={formData.nextPayment}
+                  onChange={(e) => setFormData({ ...formData, nextPayment: e.target.value })}
+                  className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 focus:outline-none focus:border-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">By default, 1 month after joining date</p>
+              </div>
             </div>
           </div>
 
-          <div className="mt-6 pt-6 border-t border-gray-800 flex justify-end gap-3">
+          {error && (
+            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500 text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="mt-6 pt-6 border-t border-gray-800 flex flex-col sm:flex-row justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              className="px-4 py-2.5 text-gray-400 hover:text-white transition-colors order-2 sm:order-1"
             >
               Cancel
-            </button>              <button
+            </button>
+            <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+              className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center order-1 sm:order-2"
             >
               {loading ? (
                 <>
@@ -260,6 +312,7 @@ export default function AddMemberModal({ isOpen, onClose, onAdd }: AddMemberModa
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

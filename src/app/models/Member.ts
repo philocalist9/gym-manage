@@ -14,6 +14,7 @@ export interface IMember extends Document {
   attendance: number;
   gymId: mongoose.Types.ObjectId | string; // Reference to the gym this member belongs to
   role: string; // Will be 'member'
+  feeAmount: number; // Fee amount in Indian Rupees
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
@@ -76,6 +77,11 @@ const MemberSchema: Schema = new Schema({
   role: {
     type: String,
     default: 'member'
+  },
+  feeAmount: {
+    type: Number,
+    default: 1000,  // Default fee of 1000 Indian Rupees
+    min: 0
   }
 }, { timestamps: true });
 
