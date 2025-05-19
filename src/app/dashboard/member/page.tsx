@@ -8,7 +8,7 @@ import {
   User, 
   Droplets, 
   Moon, 
-  DollarSign, 
+  IndianRupee, 
   MessageSquare, 
   Target,
   Pizza
@@ -169,7 +169,7 @@ export default function MemberDashboard() {
           <p className="text-sm text-gray-400">View schedule</p>
         </button>
         <button className="bg-[#151C2C] p-6 rounded-xl hover:bg-[#1A2234] transition-colors text-left">
-          <DollarSign className="w-6 h-6 text-purple-500 mb-2" />
+          <IndianRupee className="w-6 h-6 text-purple-500 mb-2" />
           <h3 className="text-white font-medium">Payments</h3>
           <p className="text-sm text-gray-400">Billing history</p>
         </button>

@@ -9,7 +9,7 @@ import {
   Users,
   MessageSquare,
   CheckCircle,
-  DollarSign
+  IndianRupee
 } from 'lucide-react';
 
 interface TrainerSettings {
@@ -276,7 +276,7 @@ export default function TrainerSettingsPage() {
         {/* Payment Settings */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
           <div className="flex items-center gap-2 mb-4">
-            <DollarSign className="w-5 h-5 text-blue-600" />
+            <IndianRupee className="w-5 h-5 text-blue-600" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Payment Settings
             </h2>

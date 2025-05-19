@@ -147,7 +147,7 @@ export default function TrainerDashboard() {
             <div className="text-gray-400">Monthly Earnings</div>
             <Wallet className="w-5 h-5 text-blue-500" />
           </div>
-          <div className="text-2xl font-semibold text-white">$2,500</div>
+          <div className="text-2xl font-semibold text-white">₹2,500</div>
           <div className="text-sm text-green-500 mt-2">+12% from last month</div>
         </div>
       </div>

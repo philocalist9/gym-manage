@@ -53,7 +53,7 @@ const recentActivities = [
     id: 2,
     type: 'payment',
     name: 'Sarah Smith',
-    action: 'made a payment of $150',
+    action: 'made a payment of ₹150',
     time: '3 hours ago',
   },
   {
@@ -330,7 +330,7 @@ function StatCard({ title, value, trend, trendUp, isCurrency = false, color }: S
       <h3 className={`${color} text-xs sm:text-sm font-medium`}>{title}</h3>
       <div className="flex items-center justify-between mt-2 md:mt-3">
         <p className="text-lg sm:text-xl md:text-2xl font-semibold text-white">
-          {isCurrency ? `$${value.toLocaleString()}` : value.toLocaleString()}
+          {isCurrency ? `₹${value.toLocaleString()}` : value.toLocaleString()}
         </p>
         <div className={`text-xs sm:text-sm font-medium ${trendUp ? 'text-green-500' : 'text-red-500'}`}>
           {trend}

@@ -17,7 +17,7 @@ import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import { 
   Users, 
   TrendingUp, 
-  DollarSign, 
+  IndianRupee, 
   Calendar,
   Clock,
   Dumbbell,
@@ -173,7 +173,7 @@ export default function GymOwnerAnalytics() {
               </p>
             </div>
             <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
-              <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
+              <IndianRupee className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
           </div>
         </div>
@@ -228,7 +228,7 @@ export default function GymOwnerAnalytics() {
                 y: {
                   beginAtZero: true,
                   ticks: {
-                    callback: (value) => `₹${value/1000}K`
+                    callback: (value) => `₹${Number(value)/1000}K`
                   }
                 }
               },

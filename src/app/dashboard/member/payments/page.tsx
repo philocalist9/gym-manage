@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { 
-  DollarSign, 
+  IndianRupee, 
   Calendar, 
   Download, 
   Search, 
@@ -113,10 +113,10 @@ export default function PaymentHistory() {
         <div className="bg-[#151C2C] p-6 rounded-xl">
           <div className="flex items-center justify-between mb-4">
             <div className="text-gray-400">Total Spent</div>
-            <DollarSign className="w-5 h-5 text-blue-500" />
+            <IndianRupee className="w-5 h-5 text-blue-500" />
           </div>
           <div className="text-2xl font-semibold text-white">
-            ${stats.totalSpent.toFixed(2)}
+            ₹{stats.totalSpent.toFixed(2)}
           </div>
           <div className="text-sm text-gray-400 mt-2">This Month</div>
         </div>

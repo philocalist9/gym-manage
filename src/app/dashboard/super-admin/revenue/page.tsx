@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Indian } from "country-flag-icons/react/3x2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -17,7 +16,7 @@ import { Bar, Line } from 'react-chartjs-2';
 import {
   CreditCard,
   TrendingUp,
-  BadgeDollarSign,
+  BadgeIndianRupee,
   ArrowUpRight,
   ArrowDownRight,
   Building2,

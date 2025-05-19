@@ -20,7 +20,7 @@ import {
   CreditCard,
   Target,
   Building2,
-  DollarSign,
+  IndianRupee,
   PieChart,
   Search,
   ShieldAlert
@@ -56,7 +56,7 @@ const superAdminMenuItems: MenuItem[] = [
     description: 'Manage registered gyms'
   },
   { 
-    icon: DollarSign, 
+    icon: IndianRupee, 
     label: 'Revenue', 
     href: '/dashboard/super-admin/revenue',
     description: 'Financial analytics and reports'

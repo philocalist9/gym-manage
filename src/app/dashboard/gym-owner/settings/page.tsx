@@ -7,7 +7,7 @@ import {
   Settings,
   Mail,
   Phone,
-  DollarSign,
+  IndianRupee,
   Globe,
   ShieldCheck,
   CheckCircle
@@ -374,7 +374,7 @@ export default function SettingsPage() {
                 className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="INR">Indian Rupee (₹)</option>
-                <option value="USD">US Dollar ($)</option>
+                <option value="USD">Indian Rupee (₹)</option>
                 <option value="EUR">Euro (€)</option>
               </select>
             </div>
