@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     await connectDB();
     
     const body = await req.json();
-    const { name, email, password, specialization, phone, bio, experience } = body;
+    const { name, email, password, specialization, phone, bio, experience, salary } = body;
 
     // Validate required fields
     if (!name || !email || !password || !specialization || !bio || experience === undefined) {
@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       phone,
       bio,
       experience: Number(experience),
+      salary: Number(salary || 0), // Include salary with default value of 0
       gymId: userData.id, // Associate trainer with the gym owner's ID
       totalClients: 0,
       rating: 5.0,

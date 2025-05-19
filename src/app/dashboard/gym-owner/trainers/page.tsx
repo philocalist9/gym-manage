@@ -15,6 +15,7 @@ interface Trainer {
   totalClients: number;
   rating: number;
   joinDate: string;
+  salary?: number; // Salary in Indian Rupees (₹)
   phone?: string;
 }
 
@@ -41,9 +42,7 @@ export default function TrainersPage() {
           throw new Error(errorData.error || 'Failed to fetch trainers');
         }
         
-        const data = await response.json();
-        
-        // Format trainer data from API response
+        const data = await response.json();          // Format trainer data from API response
         const formattedTrainers = data.trainers.map((trainer: any) => ({
           _id: trainer._id,
           name: trainer.name,
@@ -52,6 +51,7 @@ export default function TrainersPage() {
           bio: trainer.bio || "",
           experience: trainer.experience || 0,
           phone: trainer.phone,
+          salary: trainer.salary || 0,
           totalClients: trainer.totalClients || 0,
           rating: trainer.rating || 5.0,
           joinDate: new Date(trainer.joinDate || trainer.createdAt).toISOString().split('T')[0],
@@ -202,6 +202,7 @@ export default function TrainersPage() {
                 <th className="pb-4 text-left text-gray-400 font-medium">Name</th>
                 <th className="pb-4 text-left text-gray-400 font-medium">Email</th>
                 <th className="pb-4 text-left text-gray-400 font-medium">Specialization</th>
+                <th className="pb-4 text-left text-gray-400 font-medium">Salary (₹)</th>
                 <th className="pb-4 text-left text-gray-400 font-medium">Clients</th>
                 <th className="pb-4 text-left text-gray-400 font-medium">Rating</th>
                 <th className="pb-4 text-left text-gray-400 font-medium">Join Date</th>
@@ -218,6 +219,7 @@ export default function TrainersPage() {
                   <td className="py-4 text-white font-medium">{trainer.name}</td>
                   <td className="py-4 text-gray-300">{trainer.email}</td>
                   <td className="py-4 text-gray-300">{trainer.specialization}</td>
+                  <td className="py-4 text-gray-300">₹{trainer.salary?.toLocaleString('en-IN') || '0'}</td>
                   <td className="py-4 text-gray-300">{trainer.totalClients}</td>
                   <td className="py-4 text-gray-300">{trainer.rating.toFixed(1)}</td>
                   <td className="py-4 text-gray-300">{trainer.joinDate}</td>

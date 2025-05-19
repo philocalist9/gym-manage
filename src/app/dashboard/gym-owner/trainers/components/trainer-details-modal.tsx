@@ -19,6 +19,7 @@ interface Trainer {
   totalClients: number;
   rating: number;
   joinDate: string;
+  salary?: number; // Salary in Indian Rupees (₹)
   phone?: string;
 }
 
@@ -54,6 +55,10 @@ export default function TrainerDetailsModal({ isOpen, onClose, trainer }: Traine
             <div className="bg-[#1A2234] p-4 rounded-lg">
               <p className="text-sm text-gray-400 mb-1">Experience</p>
               <p className="text-gray-200 font-medium">{trainer.experience} {trainer.experience === 1 ? 'year' : 'years'}</p>
+            </div>
+            <div className="bg-[#1A2234] p-4 rounded-lg">
+              <p className="text-sm text-gray-400 mb-1">Salary</p>
+              <p className="text-gray-200 font-medium">₹{trainer.salary?.toLocaleString('en-IN') || '0'}</p>
             </div>
             {trainer.phone && (
               <div className="bg-[#1A2234] p-4 rounded-lg">

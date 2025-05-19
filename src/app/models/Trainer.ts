@@ -12,6 +12,7 @@ export interface ITrainer extends Document {
   totalClients: number;
   rating: number;
   joinDate: Date;
+  salary?: number; // Salary in Indian Rupees (₹)
   gymId: mongoose.Types.ObjectId | string; // Reference to the gym this trainer belongs to
   role: string; // Will be 'trainer'
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -48,6 +49,11 @@ const TrainerSchema: Schema = new Schema({
     type: Number,
     required: [true, 'Experience is required'],
     min: 0
+  },
+  salary: {
+    type: Number,
+    min: 0,
+    default: 0 // Default to 0 if not provided
   },
   totalClients: { 
     type: Number, 
