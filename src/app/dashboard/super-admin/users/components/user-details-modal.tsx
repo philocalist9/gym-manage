@@ -14,10 +14,10 @@ interface User {
   name: string;
   email: string;
   role: 'gym_owner' | 'trainer' | 'member' | 'admin';
-  status: 'active' | 'inactive' | 'suspended';
+  status: 'active' | 'inactive' | 'suspended' | 'pending';
   joinDate: string;
   associatedGym?: string;
-  lastActive: string;
+  lastActive?: string;
 }
 
 export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsModalProps) {
