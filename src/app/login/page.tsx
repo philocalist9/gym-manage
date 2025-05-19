@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Navbar from "../providers/navbar";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from "../hooks/useAuth";
@@ -10,7 +10,7 @@ import { LoginDecorations, LoginFooter, BrandLogo } from "../components/login/de
 import { LoadingButton } from "../components/ui/loading";
 import Notification from "../components/ui/notification";
 
-export default function Login() {
+function LoginContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [showMessage, setShowMessage] = useState(searchParams.get('registered') === 'true');
@@ -273,5 +273,13 @@ export default function Login() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
