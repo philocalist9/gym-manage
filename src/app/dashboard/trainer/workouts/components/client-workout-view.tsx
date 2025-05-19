@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Calendar, ChevronDown, ChevronUp } from "lucide-react";
-import { formatDate } from "@/app/utils/date-utils-consolidated";
+import { formatDate } from "@/app/utils/date-utils";
 
 interface Exercise {
   name: string;
@@ -38,7 +38,11 @@ interface ClientWorkoutViewProps {
   onClose: () => void;
 }
 
-export default function ClientWorkoutView({ isOpen, onClose }: ClientWorkoutViewProps) {
+interface ExtendedClientWorkoutViewProps extends ClientWorkoutViewProps {
+  clientId?: string; // Optional clientId to filter for a specific client
+}
+
+export default function ClientWorkoutView({ isOpen, onClose, clientId }: ExtendedClientWorkoutViewProps) {
   const [clientPlans, setClientPlans] = useState<{ client: Client; plans: WorkoutPlan[] }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,9 +51,56 @@ export default function ClientWorkoutView({ isOpen, onClose }: ClientWorkoutView
 
   useEffect(() => {
     if (isOpen) {
-      fetchClientWorkouts();
+      if (clientId) {
+        fetchClientWorkoutsById(clientId);
+      } else {
+        fetchClientWorkouts();
+      }
     }
   }, [isOpen]);
+
+  // Function to fetch workouts for a specific client
+  const fetchClientWorkoutsById = async (clientId: string) => {
+    try {
+      setIsLoading(true);
+      
+      // Fetch workouts for specific client
+      const response = await fetch(`/api/trainers/workouts?clientId=${clientId}`);
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch workout plans");
+      }
+      
+      const data = await response.json();
+      
+      // Fetch client details
+      const clientsResponse = await fetch('/api/trainers/clients');
+      
+      if (!clientsResponse.ok) {
+        throw new Error("Failed to fetch clients");
+      }
+      
+      const clientsData = await clientsResponse.json();
+      const clients = clientsData.clients || [];
+      const client = clients.find((c: any) => c._id === clientId) || { _id: clientId, name: "Unknown Client" };
+      
+      // Create client plans structure with only this client
+      setClientPlans([{
+        client,
+        plans: data.workouts || []
+      }]);
+      
+      // Auto expand this client since we're only viewing one
+      setExpandedClient(clientId);
+      
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Error loading workout plans: ' + errorMessage);
+      console.error("Error fetching workout plans:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const fetchClientWorkouts = async () => {
     try {

@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { Calendar as CalendarIcon, Clock, User, Dumbbell, BarChart, CheckCircle2, XCircle, Clock3, Plus, X, Save, Trash2 } from 'lucide-react';
+import AssignedWorkoutPlans from '../components/assigned-workout-plans';
+import WorkoutProgressTrackerV2 from '../components/workout-progress-tracker-v2';
 
 interface Exercise {
   name: string;
@@ -170,6 +172,12 @@ export default function WorkoutSchedule() {
           <span>Add Workout</span>
         </button>
       </div>
+
+      {/* Today's Workout Progress */}
+      <WorkoutProgressTrackerV2 />
+
+      {/* Assigned Workout Plans */}
+      <AssignedWorkoutPlans />
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

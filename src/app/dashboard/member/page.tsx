@@ -14,6 +14,7 @@ import {
   Target 
 } from 'lucide-react';
 import { formatDate } from '@/app/utils/date-utils';
+import WorkoutSummaryWidget from './components/workout-summary-widget';
 import {
   LineChart,
   Line,
@@ -103,6 +104,9 @@ export default function MemberDashboard() {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Workout Summary */}
+        <WorkoutSummaryWidget />
+        
         {/* Progress Chart */}
         <div className="bg-[#151C2C] p-6 rounded-xl">
           <h3 className="text-lg font-medium text-white mb-4">Progress Overview</h3>
