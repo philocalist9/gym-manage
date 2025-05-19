@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { X, FileText, BarChart2, Calendar, Target, Users } from "lucide-react";
+import { X, FileText } from "lucide-react";
 import GenerateReportModal from "./generate-report-modal";
 
 interface ClientDetailsModalProps {
@@ -24,7 +24,7 @@ interface Client {
   sessionsCompleted?: number;
   sessionsUpcoming?: number;
   isAssigned?: boolean;
-  originalData?: any;
+  originalData?: Record<string, unknown>;
 }
 
 // Move formatDate outside the component to prevent it from being recreated on every render

@@ -57,8 +57,9 @@ export default function SessionHistoryPage() {
       
       const data = await response.json();
       setSessions(data.appointments || []);
-    } catch (err: any) {
-      setError('Error loading appointment history: ' + (err.message || 'Unknown error'));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Error loading appointment history: ' + errorMessage);
       console.error('Error fetching appointments:', err);
     } finally {
       setIsLoading(false);
@@ -85,8 +86,9 @@ export default function SessionHistoryPage() {
       
       // Refresh appointments list
       fetchAppointments();
-    } catch (err: any) {
-      setError('Error updating appointment: ' + (err.message || 'Unknown error'));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Error updating appointment: ' + errorMessage);
       console.error('Error updating appointment:', err);
     } finally {
       setIsUpdating(false);

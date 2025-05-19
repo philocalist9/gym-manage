@@ -82,8 +82,9 @@ export default function SchedulePage() {
       
       const data = await response.json();
       setAppointments(data.appointments || []);
-    } catch (err: any) {
-      setError('Error loading appointments: ' + (err.message || 'Unknown error'));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Error loading appointments: ' + errorMessage);
       console.error('Error fetching appointments:', err);
     } finally {
       setIsLoading(false);
@@ -115,8 +116,9 @@ export default function SchedulePage() {
       if (selectedAppointment && selectedAppointment._id === appointmentId) {
         setSelectedAppointment(null);
       }
-    } catch (err: any) {
-      setError('Error updating appointment: ' + (err.message || 'Unknown error'));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Error updating appointment: ' + errorMessage);
       console.error('Error updating appointment:', err);
     } finally {
       setIsUpdating(false);
@@ -165,7 +167,19 @@ export default function SchedulePage() {
   };
 
   // Handle adding a new appointment from the AddSessionModal
-  const handleAddAppointment = async (newAppointment: any) => {
+  // Define the appointment interface
+  interface NewAppointment {
+    memberId: string;
+    gymId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    type: 'personal-training' | 'assessment' | 'consultation';
+    notes: string;
+    status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  }
+
+  const handleAddAppointment = async (newAppointment: NewAppointment) => {
     try {
       setIsUpdating(true);
       
@@ -184,8 +198,9 @@ export default function SchedulePage() {
       
       // Refresh appointments
       fetchAppointmentsForWeek();
-    } catch (err: any) {
-      setError('Error creating appointment: ' + (err.message || 'Unknown error'));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Error creating appointment: ' + errorMessage);
       console.error('Error creating appointment:', err);
     } finally {
       setIsUpdating(false);

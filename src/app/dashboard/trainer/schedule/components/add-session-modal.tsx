@@ -3,10 +3,22 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 
+// Define interfaces based on our models
+interface AppointmentData {
+  memberId: string;
+  gymId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  type: 'personal-training' | 'assessment' | 'consultation';
+  notes: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+}
+
 interface AddSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (appointmentData: any) => Promise<void>;
+  onAdd: (appointmentData: AppointmentData) => Promise<void>;
   selectedDate: Date;
 }
 
@@ -39,8 +51,23 @@ export default function AddSessionModal({ isOpen, onClose, onAdd, selectedDate }
     notes: ""
   });
   
-  const [members, setMembers] = useState<any[]>([]);
-  const [gyms, setGyms] = useState<any[]>([]);
+  // Define proper types for members and gyms
+  interface Member {
+    _id: string;
+    name: string;
+    email: string;
+    membershipType: string;
+    memberNumber: string;
+  }
+
+  interface Gym {
+    _id: string;
+    gymName: string;
+    address: string;
+  }
+
+  const [members, setMembers] = useState<Member[]>([]);
+  const [gyms, setGyms] = useState<Gym[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -93,8 +120,9 @@ export default function AddSessionModal({ isOpen, onClose, onAdd, selectedDate }
       }
       
       setMembers(data.members || []);
-    } catch (err: any) {
-      setError('Error loading members: ' + (err.message || 'Unknown error'));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Error loading members: ' + errorMessage);
       console.error('Error fetching members:', err);
     } finally {
       setIsLoading(false);
@@ -115,8 +143,9 @@ export default function AddSessionModal({ isOpen, onClose, onAdd, selectedDate }
       
       // No need to set default gym anymore since we always use the trainer's gym
       // We'll directly use the gym data in the form
-    } catch (err: any) {
-      setError('Error loading gyms: ' + (err.message || 'Unknown error'));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Error loading gyms: ' + errorMessage);
       console.error('Error fetching gyms:', err);
     } finally {
       setIsLoading(false);
@@ -144,7 +173,7 @@ export default function AddSessionModal({ isOpen, onClose, onAdd, selectedDate }
         date,
         startTime: formData.startTime,
         endTime,
-        type: formData.type,
+        type: formData.type as 'personal-training' | 'assessment' | 'consultation',
         notes: formData.notes,
         status: 'confirmed' // Trainer-created appointments are automatically confirmed
       });

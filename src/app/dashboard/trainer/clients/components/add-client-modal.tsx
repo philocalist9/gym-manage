@@ -23,15 +23,22 @@ interface Client {
   sessionsCompleted: number;
   sessionsUpcoming: number;
   isAssigned: boolean;
-  originalData?: any;
+  originalData?: Record<string, unknown>;
 }
 
+type PlanType = "Weight Loss" | "Muscle Gain" | "General Fitness" | "Athletic Performance";
+
 export default function AddClientModal({ isOpen, onClose, onAdd }: AddClientModalProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    email: string;
+    plan: PlanType;
+    goals: string[];
+  }>({
     name: "",
     email: "",
-    plan: "Weight Loss" as const,
-    goals: [""] as string[],
+    plan: "Weight Loss",
+    goals: [""]
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -132,7 +139,7 @@ export default function AddClientModal({ isOpen, onClose, onAdd }: AddClientModa
               </label>
               <select
                 value={formData.plan}
-                onChange={(e) => setFormData({ ...formData, plan: e.target.value as any })}
+                onChange={(e) => setFormData({ ...formData, plan: e.target.value as "Weight Loss" | "Muscle Gain" | "General Fitness" | "Athletic Performance" })}
                 className="w-full px-4 py-2 bg-[#1A2234] border border-gray-800 rounded-lg text-gray-200 focus:outline-none focus:border-blue-500"
               >
                 <option value="Weight Loss">Weight Loss</option>

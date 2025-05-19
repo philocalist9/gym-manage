@@ -57,7 +57,7 @@ interface Client {
   sessionsCompleted: number;
   sessionsUpcoming: number;
   isAssigned: boolean;
-  originalData?: any; // For storing the original API data
+  originalData?: Record<string, unknown>; // For storing the original API data
 }
 
 export default function ClientsPage() {
@@ -133,14 +133,15 @@ export default function ClientsPage() {
             sessionsCompleted: completedSessions,
             sessionsUpcoming: upcomingSessions,
             isAssigned: client.isAssigned || false,
-            originalData: client // Store original data for reference
+            originalData: client as unknown as Record<string, unknown> // Store original data for reference
           };
         });
         
         setClients(formattedClients);
         setError(null);
-      } catch (err: any) {
-        setError(err.message || "An error occurred while fetching clients");
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "An error occurred while fetching clients";
+        setError(errorMessage);
         console.error("Error fetching clients:", err);
         
         // Fallback to sample data if API fails
