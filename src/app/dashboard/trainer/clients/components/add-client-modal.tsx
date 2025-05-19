@@ -20,6 +20,10 @@ interface Client {
   progress: number;
   goals: string[];
   lastWorkout: string;
+  sessionsCompleted: number;
+  sessionsUpcoming: number;
+  isAssigned: boolean;
+  originalData?: any;
 }
 
 export default function AddClientModal({ isOpen, onClose, onAdd }: AddClientModalProps) {
@@ -43,7 +47,10 @@ export default function AddClientModal({ isOpen, onClose, onAdd }: AddClientModa
       nextSession: nextWeek.toISOString(),
       progress: 0,
       lastWorkout: now.toISOString(),
-      goals: formData.goals.filter(goal => goal.trim() !== "")
+      goals: formData.goals.filter(goal => goal.trim() !== ""),
+      sessionsCompleted: 0,
+      sessionsUpcoming: 1,  // One upcoming session by default
+      isAssigned: true      // New clients are assigned by default
     });
 
     setFormData({

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { X, Search, Check } from 'lucide-react';
 
 interface WorkoutPlan {
@@ -28,7 +28,9 @@ export default function AssignWorkoutModal({
   currentWorkouts = []
 }: AssignWorkoutModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedWorkouts, setSelectedWorkouts] = useState<string[]>(currentWorkouts);
+  // Initialize selectedWorkouts independently from props to avoid re-renders
+  const [selectedWorkouts, setSelectedWorkouts] = useState<string[]>([]);
+  // Use a memoized workouts list to avoid unnecessary re-renders
   const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([
     {
       id: "1",
@@ -49,28 +51,46 @@ export default function AssignWorkoutModal({
     // Add more sample workout plans as needed
   ]);
 
+  // Initialize selectedWorkouts only once when the modal opens
+  // Using a ref to track if this is the first time modal is opening
+  const initializedRef = useRef(false);
+  
   useEffect(() => {
-    setSelectedWorkouts(currentWorkouts);
-  }, [currentWorkouts]);
+    // Only set the workouts when the modal opens
+    if (isOpen) {
+      if (!initializedRef.current) {
+        setSelectedWorkouts(currentWorkouts || []);
+        initializedRef.current = true;
+      }
+    } else {
+      // Reset the initialization flag when modal closes
+      initializedRef.current = false;
+    }
+  }, [isOpen]);  // Only depend on isOpen to prevent infinite loops
 
-  const filteredWorkouts = workoutPlans.filter(workout =>
-    workout.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    workout.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    workout.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Use useMemo to prevent recalculating on each render
+  const filteredWorkouts = useMemo(() => {
+    return workoutPlans.filter(workout =>
+      workout.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      workout.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      workout.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [workoutPlans, searchQuery]);
 
-  const toggleWorkout = (workoutId: string) => {
+  // Memoize this function to prevent recreation on each render
+  const toggleWorkout = React.useCallback((workoutId: string) => {
     setSelectedWorkouts(prev =>
       prev.includes(workoutId)
         ? prev.filter(id => id !== workoutId)
         : [...prev, workoutId]
     );
-  };
+  }, []);
 
-  const handleSubmit = () => {
+  // Memoize the submit handler to prevent recreation on each render
+  const handleSubmit = React.useCallback(() => {
     onAssign(selectedWorkouts);
     onClose();
-  };
+  }, [onAssign, selectedWorkouts, onClose]);
 
   if (!isOpen) return null;
 
