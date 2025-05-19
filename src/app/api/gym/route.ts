@@ -20,38 +20,81 @@ export async function GET(req: NextRequest) {
     // Connect to database
     await connectDB();
     
-    // Check if user role is gym owner
-    if (userData.role !== 'gym-owner') {
-      return NextResponse.json(
-        { error: 'Access denied. Only gym owners can access this data' },
-        { status: 403 }
-      );
+    // Parse query parameter to determine the request type
+    const url = new URL(req.url);
+    const getAll = url.searchParams.get('all') === 'true';
+    
+    // For trainers, fetch only their associated gym
+    if (getAll && userData.role === 'trainer') {
+      // For trainers, we only show their associated gym
+      const Trainer = require('@/app/models/Trainer').default;
+      const trainer = await Trainer.findById(userData.id);
+      
+      if (!trainer || !trainer.gymId) {
+        return NextResponse.json(
+          { error: 'Trainer not associated with any gym' },
+          { status: 404 }
+        );
+      }
+      
+      const gym = await Gym.findById(trainer.gymId).select('_id gymName address email');
+      
+      if (!gym) {
+        return NextResponse.json(
+          { error: 'Associated gym not found' },
+          { status: 404 }
+        );
+      }
+      
+      return NextResponse.json({
+        message: 'Trainer gym fetched successfully',
+        gyms: [gym] // Return as array to maintain compatibility with existing code
+      });
     }
     
-    // Fetch gym data by ID
-    const gymId = userData.id;
-    
-    if (!mongoose.Types.ObjectId.isValid(gymId)) {
-      return NextResponse.json(
-        { error: 'Invalid gym ID format' },
-        { status: 400 }
-      );
+    // For members, fetch all available gyms
+    if (getAll && userData.role === 'member') {
+      const gyms = await Gym.find({}).select('_id gymName address email');
+      
+      return NextResponse.json({
+        message: 'All gyms fetched successfully',
+        gyms
+      });
     }
     
-    const gym = await Gym.findById(gymId).select('-password');
-    
-    if (!gym) {
-      return NextResponse.json(
-        { error: 'Gym not found' },
-        { status: 404 }
-      );
+    // For gym owner, fetch their specific gym
+    if (userData.role === 'gym-owner') {
+      // Fetch gym data by ID
+      const gymId = userData.id;
+      
+      if (!mongoose.Types.ObjectId.isValid(gymId)) {
+        return NextResponse.json(
+          { error: 'Invalid gym ID format' },
+          { status: 400 }
+        );
+      }
+      
+      const gym = await Gym.findById(gymId).select('-password');
+      
+      if (!gym) {
+        return NextResponse.json(
+          { error: 'Gym not found' },
+          { status: 404 }
+        );
+      }
+      
+      // Return gym data
+      return NextResponse.json({ 
+        message: 'Gym data fetched successfully',
+        gym
+      });
     }
     
-    // Return gym data
-    return NextResponse.json({ 
-      message: 'Gym data fetched successfully',
-      gym
-    });
+    // If not a valid role for this endpoint
+    return NextResponse.json(
+      { error: 'Access denied. Only gym owners, trainers, or members can access gym data' },
+      { status: 403 }
+    );
     
   } catch (error: any) {
     console.error('Error fetching gym data:', error);

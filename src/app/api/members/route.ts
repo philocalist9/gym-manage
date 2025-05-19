@@ -108,15 +108,55 @@ export async function GET(req: NextRequest) {
 
     await connectDB();
     
+    let query = {};
+    
     // For gym owners, only show their members
+    if (userData.role === 'gym-owner') {
+      query = { gymId: userData.id };
+    } 
+    // For trainers, show members from their gym
+    else if (userData.role === 'trainer') {
+      // Get trainer's gym ID
+      const Trainer = require('@/app/models/Trainer').default;
+      const trainer = await Trainer.findById(userData.id);
+      
+      if (!trainer || !trainer.gymId) {
+        return NextResponse.json(
+          { error: 'Trainer not associated with any gym' },
+          { status: 404 }
+        );
+      }
+      
+      query = { gymId: trainer.gymId };
+    }
     // For super admin, show all members (could be paginated in a real app)
-    const query = userData.role === 'super-admin' ? {} : { gymId: userData.id };
     
     const members = await Member.find(query)
       .select('-password') // Exclude password field
       .sort({ createdAt: -1 });
     
-    return NextResponse.json({ members }, { status: 200 });
+    console.log(`Returning ${members.length} members for ${userData.role}`);
+    if (members.length > 0) {
+      console.log('First member sample:', {
+        id: members[0]._id,
+        hasName: !!members[0].name,
+        name: members[0].name,
+        email: members[0].email,
+        fields: Object.keys(members[0])
+      });
+    }
+    
+    // Convert Mongoose documents to plain objects to ensure all fields are properly serialized
+    const plainMembers = members.map(member => {
+      const plainMember = member.toObject ? member.toObject() : member;
+      // Ensure name field always exists
+      if (!plainMember.name) {
+        plainMember.name = plainMember.email ? `${plainMember.email.split('@')[0]}` : `Client ${plainMember._id.toString().slice(-4)}`;
+      }
+      return plainMember;
+    });
+    
+    return NextResponse.json({ members: plainMembers }, { status: 200 });
   } catch (error: any) {
     console.error('Get members error:', error);
     return NextResponse.json(
