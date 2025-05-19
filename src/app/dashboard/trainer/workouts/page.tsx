@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
-import { Plus, Search, Filter, ChevronDown, MoreVertical } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Plus, Search, Filter, ChevronDown, MoreVertical, Users, Dumbbell, ClipboardList } from "lucide-react";
 import AddWorkoutModal from "./components/add-workout-modal";
 import WorkoutDetailsModal from "./components/workout-details-modal";
+import CreateClientWorkout from "./components/create-client-workout";
+import ClientWorkoutView from "./components/client-workout-view";
 
 interface Exercise {
   name: string;
@@ -25,6 +27,8 @@ interface WorkoutPlan {
 }
 
 export default function WorkoutPlansPage() {
+  const [isCreateClientWorkoutOpen, setIsCreateClientWorkoutOpen] = useState(false);
+  const [isClientWorkoutViewOpen, setIsClientWorkoutViewOpen] = useState(false);
   const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([
     {
       id: "1",
@@ -130,13 +134,29 @@ export default function WorkoutPlansPage() {
           <h1 className="text-2xl font-semibold text-white">Workout Plans</h1>
           <p className="text-gray-400">Create and manage workout routines</p>
         </div>
-        <button 
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Create Workout</span>
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => setIsClientWorkoutViewOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <ClipboardList className="w-5 h-5" />
+            <span>View Client Plans</span>
+          </button>
+          <button 
+            onClick={() => setIsCreateClientWorkoutOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <Users className="w-5 h-5" />
+            <span>Create Client Plan</span>
+          </button>
+          <button 
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Dumbbell className="w-5 h-5" />
+            <span>Add Template</span>
+          </button>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -325,6 +345,14 @@ export default function WorkoutPlansPage() {
         isOpen={selectedWorkout !== null}
         onClose={() => setSelectedWorkout(null)}
         workout={selectedWorkout}
+      />
+      <CreateClientWorkout
+        isOpen={isCreateClientWorkoutOpen}
+        onClose={() => setIsCreateClientWorkoutOpen(false)}
+      />
+      <ClientWorkoutView
+        isOpen={isClientWorkoutViewOpen}
+        onClose={() => setIsClientWorkoutViewOpen(false)}
       />
     </div>
   );
