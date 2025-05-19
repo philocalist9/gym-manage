@@ -8,10 +8,10 @@ import {
   User, 
   Droplets, 
   Moon, 
-  Apple, 
   DollarSign, 
   MessageSquare, 
-  Target 
+  Target,
+  Pizza
 } from 'lucide-react';
 import { formatDate } from '@/app/utils/date-utils';
 import WorkoutSummaryWidget from './components/workout-summary-widget';
@@ -95,7 +95,7 @@ export default function MemberDashboard() {
         <div className="bg-[#151C2C] p-6 rounded-xl">
           <div className="flex items-center justify-between mb-4">
             <div className="text-gray-400">Calories Today</div>
-            <Apple className="w-5 h-5 text-blue-500" />
+            <Pizza className="w-5 h-5 text-blue-500" />
           </div>
           <div className="text-2xl font-semibold text-white">1,800</div>
           <div className="text-sm text-green-500 mt-2">Within target</div>
@@ -162,11 +162,6 @@ export default function MemberDashboard() {
           <User className="w-6 h-6 text-blue-500 mb-2" />
           <h3 className="text-white font-medium">Profile</h3>
           <p className="text-sm text-gray-400">View and edit details</p>
-        </button>
-        <button className="bg-[#151C2C] p-6 rounded-xl hover:bg-[#1A2234] transition-colors text-left">
-          <Apple className="w-6 h-6 text-green-500 mb-2" />
-          <h3 className="text-white font-medium">Diet Log</h3>
-          <p className="text-sm text-gray-400">Track nutrition</p>
         </button>
         <button className="bg-[#151C2C] p-6 rounded-xl hover:bg-[#1A2234] transition-colors text-left">
           <Activity className="w-6 h-6 text-yellow-500 mb-2" />
